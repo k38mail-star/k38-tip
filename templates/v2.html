@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K38 ⚽ V2 · Google</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Roboto','Segoe UI',sans-serif;background:#fff;color:#202124;-webkit-font-smoothing:antialiased}
+.container{max-width:680px;margin:0 auto;padding:16px}
+.header{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #e8eaed;margin-bottom:20px}
+.logo{font-size:18px;font-weight:700;color:#1a73e8}
+.logo small{font-size:11px;color:#5f6368;font-weight:400}
+.header-date{font-size:11px;color:#5f6368}
+.picker{background:#f8f9fa;border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.picker-btn{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:#5f6368;font-size:20px;cursor:pointer}
+.picker-btn:hover{background:#e8eaed}
+.picker-center{text-align:center}
+.picker-label{font-size:16px;font-weight:500;color:#202124}
+.picker-sub{font-size:11px;color:#5f6368;margin-top:2px}
+.picker-today{font-size:12px;color:#1a73e8;background:none;border:none;cursor:pointer;padding:4px 12px;border-radius:12px}
+.picker-today:hover{background:#e8f0fe}
+.actions{display:flex;gap:8px;margin-bottom:16px}
+.btn{flex:1;padding:10px;border-radius:8px;border:none;font-size:13px;font-weight:500;cursor:pointer;text-align:center;transition:box-shadow .15s}
+.btn:disabled{opacity:.35;cursor:default}
+.btn-primary{background:#1a73e8;color:#fff}
+.btn-primary:hover:not(:disabled){box-shadow:0 1px 4px rgba(26,115,232,.3)}
+.btn-secondary{background:#f8f9fa;color:#202124;border:1px solid #dadce0}
+.btn-secondary:hover:not(:disabled){background:#f1f3f4}
+.btn-secondary.active{background:#e8f0fe;border-color:#1a73e8;color:#1a73e8}
+.msg{display:none;padding:10px 14px;border-radius:8px;font-size:12px;margin-bottom:14px;text-align:center}
+.msg.show{display:block}
+.msg-error{background:#fce8e6;color:#d93025}
+.msg-info{background:#e8f0fe;color:#1a73e8}
+.candidates{display:none;margin-bottom:14px}
+.candidates.show{display:block}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px}
+.ch-left{font-size:12px;color:#5f6368}
+.ch-right{font-size:11px;color:#5f6368;cursor:pointer;user-select:none}
+.ch-right input{accent-color:#1a73e8;margin-right:3px}
+.cand{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:4px;border-radius:8px;border:1px solid #e8eaed;font-size:13px;cursor:pointer;transition:.1s}
+.cand:hover{border-color:#dadce0}
+.cand.selected{border-color:#1a73e8;background:#f8f9ff}
+.cand-time{color:#5f6368;font-size:11px;min-width:50px}
+.cand-teams{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cand-flags{font-size:13px}
+.tags{display:flex;gap:3px;align-items:center}
+.tag{padding:2px 6px;border-radius:3px;font-size:10px;font-weight:500}
+.tag-win{background:#e6f4ea;color:#137333}
+.tag-ou{background:#fef7e0;color:#ea8600}
+.tag-bt{background:#f3e8fd;color:#7c2dbe}
+.tag-conf{background:#e8f0fe;color:#1a73e8}
+.results{display:none}
+.results.show{display:block}
+.rh{font-size:12px;color:#5f6368;margin-bottom:8px}
+.combo{border:1px solid #e8eaed;border-radius:8px;padding:12px;margin-bottom:6px}
+.ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cr{font-weight:500;font-size:13px;color:#1a73e8}
+.cm{display:flex;gap:10px;font-size:11px}
+.chit{color:#137333}
+.codds{color:#ea8600}
+.legs{display:grid;gap:2px}
+.leg{display:flex;align-items:center;gap:4px;padding:4px 0;font-size:11px;color:#5f6368;border-bottom:1px solid #f1f3f4}
+.leg:last-child{border-bottom:none}
+.leg-t{flex:1}
+.lp{display:flex;gap:4px}
+.empty{padding:32px;text-align:center;color:#9aa0a6;font-size:13px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid #dadce0;border-top-color:#1a73e8;border-radius:50%;animation:s .6s linear infinite;vertical-align:middle}
+@keyframes s{to{transform:rotate(360deg)}}
+@media(prefers-color-scheme:dark){body{background:#202124;color:#e8eaed}.header{border-bottom-color:#3c4043}.picker{background:#303134}.picker-label{color:#e8eaed}.picker-sub,.ch-left,.ch-right,.cand-time,.header-date,.rh,.leg,.empty{color:#9aa0a6}.cand,.combo{border-color:#3c4043;background:#303134}.cand:hover{border-color:#5f6368}.cand.selected{border-color:#8ab4f8;background:rgba(138,180,248,.06)}.btn-secondary{background:#303134;border-color:#3c4043;color:#e8eaed}.btn-secondary:hover{background:#3c4043}.btn-secondary.active{background:rgba(138,180,248,.12);border-color:#8ab4f8;color:#8ab4f8}.tag-win{background:rgba(52,199,89,.12);color:#34d399}.tag-ou{background:rgba(255,149,0,.12);color:#ff9f0a}.tag-bt{background:rgba(175,82,222,.12);color:#bf5af2}.tag-conf{background:rgba(138,180,248,.12);color:#8ab4f8}.chit{color:#34d399}.codds{color:#ff9f0a}.cr{color:#8ab4f8}.msg-info{background:rgba(138,180,248,.1);color:#8ab4f8}.msg-error{background:rgba(255,69,58,.1);color:#ff453a}.picker-today:hover{background:rgba(138,180,248,.08)}}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header"><div class="logo">K38<small> ⚽ 智荐</small></div><div class="header-date" id="d"></div></div>
+  <div class="picker"><button class="picker-btn" onclick="sd(-1)">‹</button><div class="picker-center"><div class="picker-label" id="l">今日</div><div class="picker-sub" id="s">6月21日</div></div><button class="picker-btn" onclick="sd(1)">›</button><button class="picker-today" onclick="rt()">今天</button></div>
+  <div class="actions"><button class="btn btn-primary" id="lb" onclick="lc()">📊 加载</button><button class="btn btn-secondary" id="g3" onclick="gn(3)" disabled>3串1</button><button class="btn btn-secondary" id="g4" onclick="gn(4)" disabled>4串1</button></div>
+  <div class="msg" id="m"></div>
+  <div class="candidates" id="cs"><div class="ch"><span class="ch-left">候選 <span id="cc">0</span></span><label class="ch-right"><input type="checkbox" id="sa" checked onchange="ta()"> 全選</label></div><div id="cl"></div></div>
+  <div class="results" id="rs"><div class="rh" id="rh"></div><div id="rl"></div></div>
+</div>
+<script>
+let cd=new Date(),cl=[],df='',dt='';
+const wd=['日','一','二','三','四','五','六'],fm=d=>d.toISOString().split('T')[0],fc=d=>(d.getMonth()+1)+'月'+d.getDate()+'日';
+function ud(){const t=new Date(),n=Math.round((cd-t)/864e5);document.getElementById('l').textContent=n===0?'今日':n===1?'明日':n===-1?'昨日':n>0?n+'天后':Math.abs(n)+'天前';document.getElementById('s').textContent=fc(cd);document.getElementById('d').textContent=fc(cd);df=fm(cd);dt=fm(cd)}ud();
+function sd(n){cd.setDate(cd.getDate()+n);ud();if(cl.length)lc()}
+function rt(){cd=new Date();ud();if(cl.length)lc()}
+function ms(t,x){const e=document.getElementById('m');e.className='msg show msg-'+t;e.textContent=x;if(t==='info')setTimeout(()=>e.classList.remove('show'),4e3)}
+async function lc(){const b=document.getElementById('lb');b.disabled=1;b.innerHTML='<span class="spinner"></span>';document.getElementById('cs').classList.remove('show');document.getElementById('rs').classList.remove('show');try{const r=await fetch('/api/candidates?date_from='+df+'&date_to='+dt),d=await r.json();if(d.error)throw Error(d.error);cl=d.matches||[];rc(cl);document.getElementById('cs').classList.add('show');if(!cl.length)ms('info','该日期没有可推荐的比赛');else if(cl.length<3){eg();ms('info','只有 '+cl.length+' 场，选3场生成3串1')}else eg()}catch(e){ms('error','加载失败: '+e.message)}finally{b.disabled=0;b.innerHTML='📊 加载'}}
+function rc(l){document.getElementById('cc').textContent=l.length;document.getElementById('sa').checked=1;if(!l.length){document.getElementById('cl').innerHTML='<div class="empty">暂无比赛</div>';return}
+document.getElementById('cl').innerHTML=l.map(m=>{const t=(m.match_time||m.date||'').length>10?(m.match_time||'').slice(5,16):(m.date||'').slice(5),ou=m.over_2_5>.55?'大2.5':m.over_2_5<.45&&m.over_2_5>0?'小2.5':'';return '<div class="cand selected" data-id="'+m.id+'" onclick="this.classList.toggle(\'selected\');eg()"><span class="cand-time">'+t+'</span><span class="cand-teams"><span class="cand-flags">'+(m.home_flag||'')+'</span> '+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+' <span class="cand-flags">'+(m.away_flag||'')+'</span></span><div class="tags"><span class="tag tag-win">'+m.prediction+'</span>'+(ou?'<span class="tag tag-ou">'+ou+'</span>':'')+(m.btts>.55?'<span class="tag tag-bt">⚽⚽</span>':'')+'<span class="tag tag-conf">'+m.confidence+'%</span></div></div>'}).join('');eg()}
+function ta(){document.querySelectorAll('.cand').forEach(r=>r.classList.toggle('selected',document.getElementById('sa').checked));eg()}
+function si(){return Array.from(document.querySelectorAll('.cand.selected')).map(r=>r.dataset.id)}
+function eg(){const n=si().length;document.getElementById('g3').disabled=n<3;document.getElementById('g4').disabled=n<4}
+async function gn(t){const ids=si();if(ids.length<t){ms('info','需要至少 '+t+' 场');return}let c=1;for(let i=0;i<t;i++)c=c*(ids.length-i)/(i+1);if(c>500&&!confirm('生成 '+Math.round(c)+' 种组合，继续？'))return;const b=document.getElementById('g'+t);b.disabled=1;b.innerHTML='<span class="spinner"></span>';document.getElementById('rs').classList.remove('show');ms('info','计算 '+Math.round(c)+' 种组合...');try{const r=await fetch('/api/generate-combos?type='+t+'&'+ids.map(i=>'ids='+i).join('&')),d=await r.json();if(d.error)throw Error(d.error);rr(d,t);document.getElementById('rs').classList.add('show');ms('info','')}catch(e){ms('error','生成失败: '+e.message)}finally{b.disabled=0;b.innerHTML=t+'串1';eg()}}
+function rr(d,t){document.getElementById('rh').textContent=t+'串1 · 共'+d.total_combos+'种 · 候选'+d.candidate_matches+'场';const c=d.top_combos||[];if(!c.length){document.getElementById('rl').innerHTML='<div class="empty">暂无可用组合</div>';return}
+document.getElementById('rl').innerHTML=c.map((o,i)=>'<div class="combo"><div class="ct"><span class="cr">#'+(i+1)+'</span><div class="cm"><span class="chit">'+o.hit_pct+'%</span>'+(o.fair_odds?'<span class="codds">'+o.fair_odds+'</span>':'')+'</div></div><div class="legs">'+o.matches.map(m=>'<div class="leg"><span>'+(m.date||'').slice(5)+'</span><span class="leg-t">'+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+'</span><div class="lp"><span class="tag tag-win">'+m.prediction+'</span><span class="tag tag-conf">'+m.confidence+'%</span></div></div>').join('')+'</div></div>').join('')}
+</script>
+</body>
+</html>

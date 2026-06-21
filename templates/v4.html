@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>K38 ⚽ V4 · Stripe</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter','-apple-system',sans-serif;background:#0f1117;color:#e6e8ec;-webkit-font-smoothing:antialiased}
+.container{max-width:680px;margin:0 auto;padding:20px}
+.header{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;margin-bottom:24px;border-bottom:1px solid rgba(255,255,255,.06)}
+.logo{font-size:16px;font-weight:700;background:linear-gradient(135deg,#635bff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo small{font-size:11px;font-weight:400;opacity:.5}
+.header-date{font-size:11px;color:#8b8d92}
+.picker{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:18px 20px;margin-bottom:20px;backdrop-filter:blur(20px)}
+.picker-inner{display:flex;align-items:center;justify-content:space-between}
+.picker-arrow{width:36px;height:36px;border-radius:10px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.03);color:#8b8d92;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.picker-arrow:hover{background:rgba(255,255,255,.08);color:#e6e8ec}
+.picker-center{text-align:center}
+.picker-label{font-size:16px;font-weight:600;background:linear-gradient(135deg,#e6e8ec,#8b8d92);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.picker-sub{font-size:11px;color:#8b8d92;margin-top:2px}
+.picker-today{font-size:11px;color:#635bff;background:rgba(99,91,255,.1);border:1px solid rgba(99,91,255,.15);padding:5px 14px;border-radius:8px;cursor:pointer;font-weight:500}
+.picker-today:hover{background:rgba(99,91,255,.15)}
+.actions{display:flex;gap:6px;margin-bottom:20px}
+.btn{padding:9px 0;border-radius:10px;border:none;font-size:12px;font-weight:500;cursor:pointer;text-align:center;transition:.15s;flex:1}
+.btn:disabled{opacity:.25;cursor:default}
+.btn-primary{background:linear-gradient(135deg,#635bff,#00d4ff);color:#fff}
+.btn-primary:hover:not(:disabled){opacity:.9}
+.btn-ghost{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);color:#e6e8ec}
+.btn-ghost:hover:not(:disabled){background:rgba(255,255,255,.06)}
+.msg{display:none;padding:8px 14px;border-radius:10px;font-size:11px;margin-bottom:16px;text-align:center}
+.msg.show{display:block}
+.msg-error{background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.12);color:#ff453a}
+.msg-info{background:rgba(99,91,255,.1);border:1px solid rgba(99,91,255,.12);color:#7c73ff}
+.candidates{display:none;margin-bottom:16px}
+.candidates.show{display:block}
+.ch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.ch-left{font-size:11px;color:#8b8d92;font-weight:500;letter-spacing:.05em;text-transform:uppercase}
+.ch-right{font-size:11px;color:#8b8d92;cursor:pointer}
+.ch-right input{accent-color:#635bff;margin-right:3px}
+.cand-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:9px 12px;margin-bottom:3px;font-size:12px;cursor:pointer;transition:.15s}
+.cand-row:hover{border-color:rgba(255,255,255,.08)}
+.cand-row.selected{border-color:rgba(99,91,255,.2);background:rgba(99,91,255,.04)}
+.cand-time{color:#8b8d92;font-size:11px;min-width:50px}
+.cand-teams{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tags{display:flex;gap:3px;align-items:center}
+.tag{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500}
+.tag-win{background:rgba(52,199,89,.1);color:#30d158}
+.tag-ou{background:rgba(255,149,0,.1);color:#ff9f0a}
+.tag-bt{background:rgba(175,82,222,.1);color:#bf5af2}
+.tag-conf{background:rgba(99,91,255,.1);color:#7c73ff}
+.results{display:none}
+.results.show{display:block}
+.rh{font-size:11px;color:#8b8d92;margin-bottom:8px}
+.combo{background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);border-radius:10px;padding:12px;margin-bottom:4px}
+.ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cr{font-weight:600;font-size:13px;background:linear-gradient(135deg,#635bff,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.cm{display:flex;gap:8px;font-size:11px}
+.chit{color:#30d158}
+.codds{color:#ff9f0a}
+.legs{display:grid;gap:2px}
+.leg{display:flex;align-items:center;gap:4px;padding:3px 0;font-size:11px;color:#8b8d92}
+.leg-t{flex:1}
+.lp{display:flex;gap:3px}
+.empty{padding:40px;text-align:center;color:#5f6368;font-size:12px}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.06);border-top-color:#635bff;border-radius:50%;animation:s .6s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes s{to{transform:rotate(360deg)}}
+</style></head>
+<body><div class="container">
+  <div class="header"><div class="logo">K38<small> ⚽</small></div><div class="header-date" id="d"></div></div>
+  <div class="picker"><div class="picker-inner"><button class="picker-arrow" onclick="sd(-1)">‹</button><div class="picker-center"><div class="picker-label" id="l">今日</div><div class="picker-sub" id="s">6月21日</div></div><button class="picker-arrow" onclick="sd(1)">›</button><button class="picker-today" onclick="rt()">今天</button></div></div>
+  <div class="actions"><button class="btn btn-primary" id="lb" onclick="lc()">📊 加载</button><button class="btn btn-ghost" id="g3" onclick="gn(3)" disabled>3串1</button><button class="btn btn-ghost" id="g4" onclick="gn(4)" disabled>4串1</button></div>
+  <div class="msg" id="m"></div>
+  <div class="candidates" id="cs"><div class="ch"><span class="ch-left">候选 <span id="cc">0</span></span><label class="ch-right"><input type="checkbox" id="sa" checked onchange="ta()"> 全选</label></div><div id="cl"></div></div>
+  <div class="results" id="rs"><div class="rh" id="rh"></div><div id="rl"></div></div>
+</div>
+<script>
+let cd=new Date(),cl=[],df='',dt='',wd=['日','一','二','三','四','五','六'],fm=d=>d.toISOString().split('T')[0],fc=d=>(d.getMonth()+1)+'月'+d.getDate()+'日';
+function ud(){const t=new Date(),n=Math.round((cd-t)/864e5);document.getElementById('l').textContent=n===0?'今日':n===1?'明日':n===-1?'昨日':n>0?n+'天后':Math.abs(n)+'天前';document.getElementById('s').textContent=fc(cd);document.getElementById('d').textContent=fc(cd);df=fm(cd);dt=fm(cd)}ud();
+function sd(n){cd.setDate(cd.getDate()+n);ud();if(cl.length)lc()}
+function rt(){cd=new Date();ud();if(cl.length)lc()}
+function ms(t,x){const e=document.getElementById('m');e.className='msg show msg-'+t;e.textContent=x;if(t==='info')setTimeout(()=>e.classList.remove('show'),4e3)}
+async function lc(){const b=document.getElementById('lb');b.disabled=1;b.innerHTML='<span class="spinner"></span>';document.getElementById('cs').classList.remove('show');document.getElementById('rs').classList.remove('show');try{const r=await fetch('/api/candidates?date_from='+df+'&date_to='+dt),d=await r.json();if(d.error)throw Error(d.error);cl=d.matches||[];rc(cl);document.getElementById('cs').classList.add('show');if(!cl.length)ms('info','该日期没有可推荐的比赛');else if(cl.length<3){eg();ms('info','只有 '+cl.length+' 场，选3场生成3串1')}else eg()}catch(e){ms('error','加载失败: '+e.message)}finally{b.disabled=0;b.innerHTML='📊 加载'}}
+function rc(l){document.getElementById('cc').textContent=l.length;document.getElementById('sa').checked=1;if(!l.length){document.getElementById('cl').innerHTML='<div class="empty">暂无比赛</div>';return}
+document.getElementById('cl').innerHTML=l.map(m=>{const t=(m.match_time||m.date||'').length>10?(m.match_time||'').slice(5,16):(m.date||'').slice(5),ou=m.over_2_5>.55?'大2.5':m.over_2_5<.45&&m.over_2_5>0?'小2.5':'';return '<div class="cand-row selected" data-id="'+m.id+'" onclick="this.classList.toggle(\'selected\');eg()"><span class="cand-time">'+t+'</span><span class="cand-teams"><span class="cand-flags">'+(m.home_flag||'')+'</span>'+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+'</span><div class="tags"><span class="tag tag-win">'+m.prediction+'</span>'+(ou?'<span class="tag tag-ou">'+ou+'</span>':'')+(m.btts>.55?'<span class="tag tag-bt">⚽⚽</span>':'')+'<span class="tag tag-conf">'+m.confidence+'%</span></div></div>'}).join('');eg()}
+function ta(){document.querySelectorAll('.cand-row').forEach(r=>r.classList.toggle('selected',document.getElementById('sa').checked));eg()}
+function si(){return Array.from(document.querySelectorAll('.cand-row.selected')).map(r=>r.dataset.id)}
+function eg(){const n=si().length;document.getElementById('g3').disabled=n<3;document.getElementById('g4').disabled=n<4}
+async function gn(t){const ids=si();if(ids.length<t){ms('info','需要至少 '+t+' 场');return}let c=1;for(let i=0;i<t;i++)c=c*(ids.length-i)/(i+1);if(c>500&&!confirm('生成 '+Math.round(c)+' 种组合，继续？'))return;const b=document.getElementById('g'+t);b.disabled=1;b.innerHTML='<span class="spinner"></span>';document.getElementById('rs').classList.remove('show');ms('info','计算 '+Math.round(c)+' 种组合...');try{const r=await fetch('/api/generate-combos?type='+t+'&'+ids.map(i=>'ids='+i).join('&')),d=await r.json();if(d.error)throw Error(d.error);rr(d,t);document.getElementById('rs').classList.add('show');ms('info','')}catch(e){ms('error','生成失败: '+e.message)}finally{b.disabled=0;b.innerHTML=t+'串1';eg()}}
+function rr(d,t){document.getElementById('rh').textContent=t+'串1 · 共'+d.total_combos+'种 · 候选'+d.candidate_matches+'场';const c=d.top_combos||[];if(!c.length){document.getElementById('rl').innerHTML='<div class="empty">暂无可用组合</div>';return}
+document.getElementById('rl').innerHTML=c.map((o,i)=>'<div class="combo"><div class="ct"><span class="cr">#'+(i+1)+'</span><div class="cm"><span class="chit">'+o.hit_pct+'%</span>'+(o.fair_odds?'<span class="codds">'+o.fair_odds+'</span>':'')+'</div></div><div class="legs">'+o.matches.map(m=>'<div class="leg"><span class="leg-t">'+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+'</span><div class="lp"><span class="tag tag-win">'+m.prediction+'</span><span class="tag tag-conf">'+m.confidence+'%</span></div></div>').join('')+'</div></div>').join('')}
+</script></body></html>

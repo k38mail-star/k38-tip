@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>K38 ⚽ 智荐</title>
+<style>
+  :root {
+    --bg: #000000;
+    --surface: #1c1c1e;
+    --surface2: #2c2c2e;
+    --border: rgba(255,255,255,0.08);
+    --borderActive: rgba(255,255,255,0.15);
+    --text: #f5f5f7;
+    --text2: #98989d;
+    --text3: #636366;
+    --accent: #007aff;
+    --accent2: #0a84ff;
+    --green: #30d158;
+    --orange: #ff9f0a;
+    --red: #ff453a;
+    --radius: 12px;
+    --radiusSm: 8px;
+    --font: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .app{max-width:420px;margin:0 auto;padding:20px 16px 40px;min-height:100vh}
+
+  /* Header */
+  .hd{display:flex;justify-content:space-between;align-items:center;padding-bottom:16px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+  .hd-l{font-size:17px;font-weight:700;letter-spacing:-.03em}
+  .hd-l span{color:var(--accent)}
+  .hd-l small{font-size:11px;font-weight:400;color:var(--text3);margin-left:2px}
+  .hd-r{font-size:12px;color:var(--text2)}
+
+  /* Day Selector */
+  .day{display:flex;align-items:center;justify-content:space-between;background:var(--surface);border-radius:var(--radius);padding:14px 12px;margin-bottom:16px}
+  .day-ar{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--text2);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.1s;-webkit-tap-highlight-color:transparent}
+  .day-ar:active{background:var(--surface2)}
+  .day-c{text-align:center;flex:1}
+  .day-l{font-size:17px;font-weight:600;letter-spacing:-.02em}
+  .day-s{font-size:12px;color:var(--text2);margin-top:1px}
+  .day-t{font-size:12px;color:var(--accent);background:none;border:none;padding:6px 14px;border-radius:20px;cursor:pointer;font-weight:500;-webkit-tap-highlight-color:transparent}
+  .day-t:active{background:rgba(0,122,255,.1)}
+
+  /* Actions */
+  .act{display:flex;gap:6px;margin-bottom:20px}
+  .act-btn{flex:1;padding:11px 0;border-radius:var(--radiusSm);border:none;font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:.15s;-webkit-tap-highlight-color:transparent}
+  .act-btn:disabled{opacity:.3;cursor:default}
+  .act-p{background:var(--accent);color:#fff}
+  .act-p:active:not(:disabled){background:var(--accent2)}
+  .act-s{background:var(--surface);color:var(--text)}
+  .act-s:active:not(:disabled){background:var(--surface2)}
+  .act-badge{display:inline-block;background:rgba(255,255,255,.06);border-radius:6px;padding:0 5px;font-size:10px;color:var(--text2);margin-left:3px}
+
+  /* Message */
+  .msg{display:none;padding:10px 14px;border-radius:var(--radiusSm);font-size:12px;margin-bottom:16px;text-align:center;line-height:1.4}
+  .msg.show{display:block}
+  .msg-e{background:rgba(255,69,58,.08);color:var(--red)}
+  .msg-i{background:rgba(0,122,255,.08);color:var(--accent)}
+
+  /* Section title */
+  .st{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;padding:0 2px}
+  .st-l{font-size:13px;color:var(--text2);font-weight:500}
+  .st-r{font-size:12px;color:var(--text2);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+  .st-r input{accent-color:var(--accent);margin-right:3px;transform:scale(.9)}
+
+  /* Candidate rows (Apple-style list) */
+  .pool{display:none;margin-bottom:20px}
+  .pool.show{display:block}
+  .list{}
+  .row{display:flex;align-items:center;gap:8px;padding:10px 12px;margin-bottom:2px;border-radius:var(--radiusSm);font-size:13px;cursor:pointer;transition:.1s;-webkit-tap-highlight-color:transparent;position:relative}
+  .row:active{background:rgba(255,255,255,.03)}
+  .row.sel{background:rgba(0,122,255,.05)}
+  .row:not(.sel){opacity:.55}
+  .rt{color:var(--text3);font-size:11px;min-width:52px}
+  .rte{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rtags{display:flex;gap:3px;align-items:center;flex-shrink:0}
+  .rtag{padding:2px 6px;border-radius:4px;font-size:10px;font-weight:500}
+  .rtag-w{background:rgba(48,209,88,.1);color:var(--green)}
+  .rtag-o{background:rgba(255,159,10,.1);color:var(--orange)}
+  .rtag-b{background:rgba(175,82,222,.1);color:#bf5af2}
+  .rtag-c{background:rgba(0,122,255,.1);color:var(--accent);min-width:28px;text-align:center}
+
+  /* Results */
+  .res{display:none}
+  .res.show{display:block}
+  .rh{font-size:12px;color:var(--text2);margin-bottom:10px;padding:0 2px}
+  .cmp{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:6px}
+  .ct{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .cr{font-weight:700;font-size:14px;color:var(--accent)}
+  .cm{display:flex;gap:12px;font-size:12px}
+  .chit{color:var(--green);font-weight:600}
+  .codds{color:var(--orange)}
+  .cl{display:grid;gap:3px}
+  .cl-item{display:flex;align-items:center;gap:4px;padding:4px 0;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border)}
+  .cl-item:last-child{border-bottom:none}
+  .cl-t{flex:1}
+  .cl-p{display:flex;gap:4px}
+
+  /* Empty state */
+  .empty{text-align:center;padding:48px 20px;color:var(--text3);font-size:13px}
+
+  /* Spinner */
+  .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.06);border-top-color:var(--accent);border-radius:50%;animation:s .6s linear infinite;vertical-align:middle}
+  @keyframes s{to{transform:rotate(360deg)}}
+
+  /* Loading shimmer */
+  .shimmer{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px;height:44px;margin-bottom:4px}
+  @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+  @media (max-width:480px){.app{padding:16px 12px 32px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hd">
+    <div class="hd-l">K38<span>⚽</span><small>智荐</small></div>
+    <div class="hd-r" id="dateDisplay"></div>
+  </div>
+
+  <div class="day">
+    <button class="day-ar" id="prevDate">‹</button>
+    <div class="day-c">
+      <div class="day-l" id="dayLabel">今日</div>
+      <div class="day-s" id="daySub"></div>
+    </div>
+    <button class="day-ar" id="nextDate">›</button>
+    <button class="day-t" id="todayBtn">今天</button>
+  </div>
+
+  <div class="act">
+    <button class="act-btn act-p" id="loadBtn">📊 加载</button>
+    <button class="act-btn act-s" id="combo3" disabled>3串1</button>
+    <button class="act-btn act-s" id="combo4" disabled>4串1</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+
+  <div class="pool" id="pool">
+    <div class="st">
+      <span class="st-l">候选 <span id="candCount">0</span></span>
+      <label class="st-r"><input type="checkbox" id="selectAll" checked> 全选</label>
+    </div>
+    <div class="list" id="candList"></div>
+  </div>
+
+  <div class="res" id="res">
+    <div class="rh" id="resultHeader"></div>
+    <div id="resultList"></div>
+  </div>
+</div>
+
+<script>
+const pad = n => String(n).padStart(2,'0');
+const fmt = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const fmtCN = d => (d.getMonth()+1)+'月'+d.getDate()+'日';
+const dayNames = ['日','一','二','三','四','五','六'];
+
+let state = {
+  date: fmt(new Date()),
+  matches: [],
+  selected: new Set(),
+  combos: null
+};
+
+const els = {
+  dateDisplay: document.getElementById('dateDisplay'),
+  dayLabel: document.getElementById('dayLabel'),
+  daySub: document.getElementById('daySub'),
+  prevDate: document.getElementById('prevDate'),
+  nextDate: document.getElementById('nextDate'),
+  todayBtn: document.getElementById('todayBtn'),
+  loadBtn: document.getElementById('loadBtn'),
+  combo3: document.getElementById('combo3'),
+  combo4: document.getElementById('combo4'),
+  msg: document.getElementById('msg'),
+  pool: document.getElementById('pool'),
+  candCount: document.getElementById('candCount'),
+  candList: document.getElementById('candList'),
+  selectAll: document.getElementById('selectAll'),
+  res: document.getElementById('res'),
+  resultHeader: document.getElementById('resultHeader'),
+  resultList: document.getElementById('resultList')
+};
+
+function updateDateDisplay() {
+  const d = new Date(state.date + 'T12:00:00');
+  const today = new Date();
+  const todayStr = fmt(today);
+  const diff = Math.round((d - today) / 86400000);
+  if (state.date === todayStr) els.dayLabel.textContent = '今日';
+  else if (diff === 1) els.dayLabel.textContent = '明日';
+  else if (diff === -1) els.dayLabel.textContent = '昨日';
+  else els.dayLabel.textContent = diff > 0 ? diff+'天后' : Math.abs(diff)+'天前';
+  els.daySub.textContent = fmtCN(d)+' 周'+dayNames[d.getDay()];
+  els.dateDisplay.textContent = fmtCN(d);
+}
+
+function showMsg(type, text) {
+  els.msg.className = 'msg show msg-' + type;
+  els.msg.textContent = text;
+  if (type === 'i') setTimeout(() => els.msg.classList.remove('show'), 4000);
+}
+
+function showLoading(show) {
+  if (show) {
+    els.candList.innerHTML = '<div class="shimmer"></div><div class="shimmer"></div><div class="shimmer"></div>';
+  }
+}
+
+function setDate(dateStr) {
+  state.date = dateStr;
+  updateDateDisplay();
+  if (state.matches.length) fetchCandidates();
+}
+
+function shiftDate(n) {
+  const d = new Date(state.date + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  setDate(fmt(d));
+}
+
+async function fetchCandidates() {
+  els.pool.classList.remove('show');
+  els.res.classList.remove('show');
+  els.loadBtn.disabled = true;
+  els.loadBtn.innerHTML = '<span class="spin"></span>';
+  showLoading(true);
+
+  try {
+    const res = await fetch('/api/candidates?date_from='+state.date+'&date_to='+state.date);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    state.matches = data.matches || [];
+    state.selected = new Set(state.matches.map(m => String(m.id)));
+    renderCandidates();
+    els.pool.classList.add('show');
+    updateComboButtons();
+    if (!state.matches.length) showMsg('i', '该日期没有可推荐的比赛');
+    else if (state.matches.length < 3) showMsg('i', '只有 '+state.matches.length+' 场，选3场生成3串1');
+  } catch(e) {
+    showMsg('e', '加载失败: '+e.message);
+  } finally {
+    els.loadBtn.disabled = false;
+    els.loadBtn.textContent = '📊 加载';
+  }
+}
+
+function renderCandidates() {
+  const list = state.matches;
+  els.candCount.textContent = list.length;
+  els.selectAll.checked = true;
+
+  if (!list.length) {
+    els.candList.innerHTML = '<div class="empty">暂无比赛</div>';
+    return;
+  }
+
+  els.candList.innerHTML = list.map(m => {
+    const id = String(m.id);
+    const time = (m.match_time||m.date||'').length > 10
+      ? (m.match_time||'').slice(5,16)
+      : (m.date||'').slice(5);
+    const ou = m.over_2_5 > 0.55 ? '大2.5' : (m.over_2_5 < 0.45 && m.over_2_5 > 0 ? '小2.5' : '');
+    const sel = state.selected.has(id) ? ' sel' : '';
+    return '<div class="row'+sel+'" data-id="'+id+'">'
+      +'<span class="rt">'+time+'</span>'
+      +'<span class="rte">'+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+'</span>'
+      +'<div class="rtags">'
+      +'<span class="rtag rtag-w">'+m.prediction+'</span>'
+      +(ou?'<span class="rtag rtag-o">'+ou+'</span>':'')
+      +'<span class="rtag rtag-c">'+m.confidence+'%</span>'
+      +'</div></div>';
+  }).join('');
+}
+
+// Event delegation for match selection
+els.candList.addEventListener('click', e => {
+  const row = e.target.closest('.row');
+  if (!row) return;
+  const id = row.dataset.id;
+  if (state.selected.has(id)) {
+    state.selected.delete(id);
+    row.classList.remove('sel');
+  } else {
+    state.selected.add(id);
+    row.classList.add('sel');
+  }
+  updateComboButtons();
+});
+
+els.selectAll.addEventListener('change', () => {
+  const checked = els.selectAll.checked;
+  document.querySelectorAll('.row').forEach(r => {
+    r.classList.toggle('sel', checked);
+    if (checked) state.selected.add(r.dataset.id);
+    else state.selected.delete(r.dataset.id);
+  });
+  updateComboButtons();
+});
+
+function updateComboButtons() {
+  const n = state.selected.size;
+  els.combo3.disabled = n < 3;
+  els.combo4.disabled = n < 4;
+}
+
+els.prevDate.addEventListener('click', () => shiftDate(-1));
+els.nextDate.addEventListener('click', () => shiftDate(1));
+els.todayBtn.addEventListener('click', () => setDate(fmt(new Date())));
+els.loadBtn.addEventListener('click', fetchCandidates);
+
+async function generateCombos(type) {
+  const ids = Array.from(state.selected);
+  if (ids.length < type) { showMsg('i', '需要至少 '+type+' 场'); return; }
+
+  // Estimate
+  let totalC = 1;
+  for (let i = 0; i < type; i++) totalC = totalC * (ids.length - i) / (i + 1);
+  if (totalC > 500 && !confirm('生成 '+Math.round(totalC)+' 种组合，继续？')) return;
+
+  const btn = type === 3 ? els.combo3 : els.combo4;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>';
+  els.res.classList.remove('show');
+  showMsg('i', '计算 '+Math.round(totalC)+' 种组合...');
+
+  try {
+    const url = '/api/generate-combos?type='+type+'&'+ids.map(i=>'ids='+i).join('&');
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    renderResults(data, type);
+    els.res.classList.add('show');
+    showMsg('i', '');
+  } catch(e) {
+    showMsg('e', '生成失败: '+e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = type+'串1';
+    updateComboButtons();
+  }
+}
+
+els.combo3.addEventListener('click', () => generateCombos(3));
+els.combo4.addEventListener('click', () => generateCombos(4));
+
+function renderResults(data, type) {
+  els.resultHeader.textContent = type+'串1 · '+data.total_combos+'种组合 · 候选'+data.candidate_matches+'场';
+  const combos = data.top_combos || [];
+  if (!combos.length) {
+    els.resultList.innerHTML = '<div class="empty">暂无可用组合</div>';
+    return;
+  }
+  els.resultList.innerHTML = combos.map((c,i) =>
+    '<div class="cmp">'
+    +'<div class="ct">'
+    +'<span class="cr">#'+(i+1)+'</span>'
+    +'<div class="cm">'
+    +'<span class="chit">'+c.hit_pct+'%</span>'
+    +(c.fair_odds?'<span class="codds">'+c.fair_odds+'</span>':'')
+    +'</div></div>'
+    +'<div class="cl">'
+    +c.matches.map(m =>
+      '<div class="cl-item">'
+      +'<span class="cl-t">'+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+'</span>'
+      +'<div class="cl-p">'
+      +'<span class="rtag rtag-w">'+m.prediction+'</span>'
+      +'<span class="rtag rtag-c">'+m.confidence+'%</span>'
+      +'</div></div>'
+    ).join('')
+    +'</div></div>'
+  ).join('');
+}
+
+// Init
+updateDateDisplay();
+fetchCandidates();
+</script>
+</body>
+</html>
