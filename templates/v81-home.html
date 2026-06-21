@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>K38 ⚽</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro','Helvetica Neue',sans-serif;background:#0d1117;color:#e6edf3;-webkit-font-smoothing:antialiased}
+.app{max-width:420px;margin:0 auto;padding:24px 16px;min-height:100vh}
+.icon{text-align:center;font-size:36px;margin-bottom:6px}
+h1{font-size:24px;font-weight:700;text-align:center;letter-spacing:-.02em;margin-bottom:20px}
+
+/* Step labels */
+.sl{font-size:11px;color:#8b949e;margin-bottom:8px;display:flex;align-items:center;gap:4px}
+.sl .num{display:inline-flex;width:18px;height:18px;border-radius:50%;border:1px solid #484f58;align-items:center;justify-content:center;font-size:9px;color:#484f58;flex-shrink:0}
+.sl.active{color:#e6edf3}.sl.active .num{border-color:#3fb950;color:#3fb950;background:rgba(35,134,54,.08)}
+.sl.done{opacity:.6}
+
+/* League tags */
+.lg{margin-bottom:18px}
+.lg-grid{display:flex;gap:4px;flex-wrap:wrap}
+.lg-item{padding:6px 12px;border-radius:6px;border:1px solid #21262d;background:transparent;color:#8b949e;font-size:11px;cursor:pointer;transition:.1s;user-select:none}
+.lg-item:hover{border-color:#30363d;color:#e6edf3}
+.lg-item.sel{border-color:#238636;background:rgba(35,134,54,.08);color:#3fb950}
+
+/* Date buttons */
+.dp{margin-bottom:10px}
+.dp-grid{display:flex;gap:5px;flex-wrap:wrap}
+.dp-btn{flex:1;min-width:72px;padding:14px 8px;border-radius:8px;border:1px solid #30363d;background:#161b22;color:#e6edf3;font-size:14px;cursor:pointer;text-align:center;transition:.1s;font-weight:500}
+.dp-btn:hover{border-color:#58a6ff}
+.dp-btn.sel{border-color:#238636;background:rgba(35,134,54,.08);color:#3fb950}
+.dp-btn .cnt{display:block;font-size:10px;color:#484f58;margin-top:2px;font-weight:400}
+
+/* Match list (shown after date selected) */
+.ml{margin-top:12px;display:none}
+.ml.show{display:block}
+.mc{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:10px;margin-bottom:4px;cursor:pointer;transition:.1s;display:flex;align-items:center;gap:8px}
+.mc:hover{border-color:#30363d}
+.mc.off{opacity:.3}
+.mc .ck{width:18px;height:18px;border-radius:4px;border:2px solid #30363d;display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;color:transparent}
+.mc .ck.on{border-color:#3fb950;background:#238636;color:#fff}
+.mc-info{flex:1;min-width:0}
+.mc-top{display:flex;justify-content:space-between;font-size:10px;color:#8b949e;margin-bottom:2px}
+.mc-teams{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mc-pick{font-size:10px;color:#8b949e;margin-top:2px;display:flex;align-items:center;gap:6px}
+.tag{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:500;display:inline-block}
+.tg{background:rgba(35,134,54,.12);color:#3fb950}
+.to{background:rgba(210,153,34,.12);color:#d29922}
+.edge{color:#3fb950;font-weight:600}
+
+/* Bottom bar */
+.bb{position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #21262d;padding:10px 16px;display:none;z-index:100}
+.bb.show{display:block}.bb-inner{max-width:420px;margin:0 auto;display:flex;align-items:center;gap:10px}
+.bb-info{flex:1}.bb-cnt{font-size:13px;font-weight:600}.bb-cnt span{color:#3fb950}
+.bb-odds{font-size:10px;color:#8b949e;margin-top:1px}.bb-btn{padding:10px 20px;border-radius:8px;border:none;background:#238636;color:#fff;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap}
+.bb-btn:disabled{opacity:.3;cursor:default}
+
+/* League filter bar (appears after loading) */
+.lf{display:none;gap:4px;overflow-x:auto;padding:0 0 8px;margin-bottom:8px;scrollbar-width:none}
+.lf.show{display:flex}
+.lf-item{flex-shrink:0;padding:5px 10px;border-radius:6px;border:1px solid #21262d;background:transparent;color:#8b949e;font-size:10px;cursor:pointer}
+.lf-item.sel{border-color:#238636;color:#3fb950;background:rgba(35,134,54,.06)}
+</style></head>
+<body>
+<div class="app">
+  <div class="icon">⚽</div>
+  <h1>今天买什么？</h1>
+
+  <!-- Step 1: League -->
+  <div class="lg">
+    <div class="sl active" id="sl1"><span class="num">1</span> 想看哪些联赛？</div>
+    <div class="lg-grid" id="leagueGrid">
+      <span class="lg-item" onclick="toggleLG(this,'epl')">🏴󠁧󠁢󠁥󠁮󠁧󠁿 英超</span>
+      <span class="lg-item" onclick="toggleLG(this,'la')">🇪🇸 西甲</span>
+      <span class="lg-item" onclick="toggleLG(this,'sa')">🇮🇹 意甲</span>
+      <span class="lg-item" onclick="toggleLG(this,'bl')">🇩🇪 德甲</span>
+      <span class="lg-item" onclick="toggleLG(this,'l1')">🇫🇷 法甲</span>
+      <span class="lg-item" onclick="toggleLG(this,'wc')">🌍 世界杯</span>
+      <span class="lg-item sel" onclick="toggleLG(this,'all')">✓ 全部</span>
+    </div>
+  </div>
+
+  <!-- Step 2: Time (match counts change dynamically) -->
+  <div class="dp">
+    <div class="sl" id="sl2"><span class="num">2</span> 想看哪几天？</div>
+    <div class="dp-grid">
+      <button class="dp-btn" onclick="pickDate(this)">今天 <span class="cnt" id="cToday">3场</span></button>
+      <button class="dp-btn" onclick="pickDate(this)">3天 <span class="cnt" id="c3d">12场</span></button>
+      <button class="dp-btn" onclick="pickDate(this)">5天 <span class="cnt" id="c5d">21场</span></button>
+      <button class="dp-btn" onclick="pickDate(this)">7天 <span class="cnt" id="c7d">38场</span></button>
+    </div>
+  </div>
+
+  <!-- League filter bar (appears after loading) -->
+  <div class="lf" id="leagueFilter">
+    <span class="lf-item sel">全部</span>
+    <span class="lf-item">英超</span>
+    <span class="lf-item">西甲</span>
+    <span class="lf-item">意甲</span>
+    <span class="lf-item">德甲</span>
+    <span class="lf-item">世界杯</span>
+  </div>
+
+  <!-- Match list -->
+  <div class="ml" id="matchList">
+    <div class="mc" id="m1">
+      <div class="ck on" onclick="event.stopPropagation();toggleCK('m1')">✓</div>
+      <div class="mc-info" onclick="tog('m1')">
+        <div class="mc-top"><span>🏆 英超 · 03:00</span><span>信心 82%</span></div>
+        <div class="mc-teams">🇧🇪 比利时 vs 伊朗</div>
+        <div class="mc-pick"><span class="tag tg">推荐 主胜</span>1.85 <span class="edge">+5.2%</span></div>
+      </div>
+    </div>
+    <div class="mc" id="m2">
+      <div class="ck on" onclick="event.stopPropagation();toggleCK('m2')">✓</div>
+      <div class="mc-info" onclick="tog('m2')">
+        <div class="mc-top"><span>🏆 英超 · 06:00</span><span>信心 76%</span></div>
+        <div class="mc-teams">🇺🇾 乌拉圭 vs 佛得角</div>
+        <div class="mc-pick"><span class="tag tg">推荐 客胜</span>6.00 <span class="edge">+8.1%</span></div>
+      </div>
+    </div>
+    <div class="mc" id="m3">
+      <div class="ck on" onclick="event.stopPropagation();toggleCK('m3')">✓</div>
+      <div class="mc-info" onclick="tog('m3')">
+        <div class="mc-top"><span>🏆 英超 · 09:00</span><span>信心 69%</span></div>
+        <div class="mc-teams">🇳🇿 新西兰 vs 埃及</div>
+        <div class="mc-pick"><span class="tag to">大2.5</span>1.72 <span class="edge">+3.8%</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom bar -->
+<div class="bb" id="bb">
+  <div class="bb-inner">
+    <div class="bb-info"><div class="bb-cnt">已选 <span id="selCnt">3</span> 场</div><div class="bb-odds">串关 <span id="selOdds">8.52</span>x</div></div>
+    <button class="bb-btn" id="goBtn">🎯 让AI串关</button>
+  </div>
+</div>
+
+<script>
+var counts = {today:3, d3:12, d5:21, d7:38};
+var multipliers = {today:1, d3:1.5, d5:2, d7:2.5};
+var selectedLeagues = {all:true};
+
+function toggleLG(el, key){
+  if(key==='all'){
+    document.querySelectorAll('.lg-item').forEach(function(e){e.classList.remove('sel')});
+    el.classList.add('sel');
+    selectedLeagues = {all:true};
+  } else {
+    var allEl = document.querySelector('.lg-item:last-child');
+    allEl.classList.remove('sel');
+    allEl.textContent = allEl.textContent.replace('✓ ','');
+    delete selectedLeagues.all;
+    el.classList.toggle('sel');
+    if(el.classList.contains('sel')) selectedLeagues[key]=true;
+    else delete selectedLeagues[key];
+    // If nothing selected, re-select all
+    if(Object.keys(selectedLeagues).length===0){
+      selectedLeagues = {all:true};
+      allEl.classList.add('sel');
+      allEl.textContent = '✓ 全部';
+    }
+  }
+  // Update match counts based on selected leagues
+  var factor = Object.keys(selectedLeagues).length;
+  document.getElementById('cToday').textContent = Math.round(counts.today * factor)+'场';
+  document.getElementById('c3d').textContent = Math.round(counts.d3 * factor)+'场';
+  document.getElementById('c5d').textContent = Math.round(counts.d5 * factor)+'场';
+  document.getElementById('c7d').textContent = Math.round(counts.d7 * factor)+'场';
+}
+
+function pickDate(el){
+  document.querySelectorAll('.dp-btn').forEach(function(b){b.classList.remove('sel')});
+  el.classList.add('sel');
+  // Show league filter + match list
+  document.getElementById('leagueFilter').classList.add('show');
+  document.getElementById('matchList').classList.add('show');
+  document.getElementById('bb').classList.add('show');
+  updateCount();
+}
+
+function toggleCK(id){
+  var el = document.getElementById(id);
+  var ck = el.querySelector('.ck');
+  ck.classList.toggle('on');
+  ck.textContent = ck.classList.contains('on')?'✓':'';
+  updateCount();
+}
+
+function tog(id){
+  var el = document.getElementById(id);
+  el.classList.toggle('off');
+  updateCount();
+}
+
+function updateCount(){
+  var n = document.querySelectorAll('.mc:not(.off) .ck.on').length;
+  document.getElementById('selCnt').textContent = n;
+  document.getElementById('selOdds').textContent = n>=2?'8.52':'—';
+}
+</script>
+</body></html>

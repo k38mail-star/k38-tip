@@ -117,8 +117,23 @@
 <body>
 <div class="app">
   <div class="hd">
-    <div class="hd-l">K38<span>⚽</span><small>智荐</small></div>
-    <div class="hd-r" id="dateDisplay"></div>
+    <div>
+      <div class="hd-l" style="font-size:20px;font-weight:700;letter-spacing:-.03em">今天买什么？</div>
+      <div class="hd-r" style="font-size:11px;color:#636366;margin-top:2px">AI 足球推荐 · 智能串关</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <select id="tzSelect" onchange="changeTz(this.value)" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:6px;color:#98989d;font-size:10px;padding:2px 6px;max-width:90px">
+        <option value="Asia/Shanghai">UTC+8</option>
+        <option value="Asia/Tokyo">UTC+9</option>
+        <option value="Asia/Seoul">UTC+9</option>
+        <option value="Asia/Singapore">UTC+8</option>
+        <option value="Asia/Bangkok">UTC+7</option>
+        <option value="America/New_York">UTC-4</option>
+        <option value="America/Los_Angeles">UTC-7</option>
+        <option value="Europe/London">UTC+1</option>
+        <option value="Australia/Sydney">UTC+10</option>
+      </select>
+    </div>
   </div>
 
   <div class="day">
@@ -245,10 +260,12 @@ async function fetchCandidates() {
     showMsg('e', '加载失败: '+e.message);
   } finally {
     els.loadBtn.disabled = false;
-    els.loadBtn.textContent = '📊 加载';
+    els.loadBtn.textContent = '📊 加载比赛';
   }
 }
 
+function fmtOdds(v){return v!==undefined&&v!==null?Number(v).toFixed(2):'-'}
+function fmtKelly(v){return v!==undefined&&v!==null?Math.round(v*100):'-'}
 function renderCandidates() {
   const list = state.matches;
   els.candCount.textContent = list.length;
@@ -266,14 +283,24 @@ function renderCandidates() {
       : (m.date||'').slice(5);
     const ou = m.over_2_5 > 0.55 ? '大2.5' : (m.over_2_5 < 0.45 && m.over_2_5 > 0 ? '小2.5' : '');
     const sel = state.selected.has(id) ? ' sel' : '';
+    const o = m.odds || {};
+    const hasOdds = o.ev_pct !== undefined && o.ev_pct !== null;
     return '<div class="row'+sel+'" data-id="'+id+'">'
-      +'<span class="rt">'+time+'</span>'
+      +'<div style="display:flex;align-items:center;gap:6px;width:100%">'
+      +'<span class="rt" data-d="'+m.date+'" data-t="'+(m.match_time||'')+'">'+tzTime(m.date, m.match_time)+'</span>'
       +'<span class="rte">'+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+'</span>'
       +'<div class="rtags">'
       +'<span class="rtag rtag-w">'+m.prediction+'</span>'
       +(ou?'<span class="rtag rtag-o">'+ou+'</span>':'')
       +'<span class="rtag rtag-c">'+m.confidence+'%</span>'
-      +'</div></div>';
+      +'</div></div>'
+      +(hasOdds ? '<div class="val-row" style="display:flex;gap:4px;padding:4px 0 0 0;width:100%;border-top:1px solid rgba(255,255,255,.04);margin-top:4px">'
+        +'<div class="vl" style="flex:1;text-align:center"><div class="vn" style="font-size:11px;font-weight:600;color:var(--accent)">'+fmtOdds(o.home_odds)+'</div><div class="vb" style="font-size:8px;color:#636366">赔率</div></div>'
+        +'<div class="vl" style="flex:1;text-align:center"><div class="vn" style="font-size:11px;font-weight:600;color:'+(o.edge_pct>0?'var(--green)':'var(--muted)')+'">'+(o.edge_pct>0?'+':'')+o.edge_pct+'%</div><div class="vb" style="font-size:8px;color:#636366">Edge</div></div>'
+        +'<div class="vl" style="flex:1;text-align:center"><div class="vn" style="font-size:11px;font-weight:600;color:'+(o.ev_pct>0?'var(--green)':'var(--muted)')+'">'+(o.ev_pct>0?'+':'')+o.ev_pct+'%</div><div class="vb" style="font-size:8px;color:#636366">EV</div></div>'
+        +'<div class="vl" style="flex:1;text-align:center"><div class="vn" style="font-size:11px;font-weight:600;color:var(--orange)">$'+fmtKelly(o.kelly)+'</div><div class="vb" style="font-size:8px;color:#636366">Kelly</div></div>'
+        +'</div>' : '')
+      +'</div>';
   }).join('');
 }
 
@@ -340,7 +367,7 @@ async function generateCombos(type) {
     showMsg('e', '生成失败: '+e.message);
   } finally {
     btn.disabled = false;
-    btn.textContent = type+'串1';
+    btn.textContent = '生成 '+type+'串1';
     updateComboButtons();
   }
 }
@@ -379,6 +406,24 @@ function renderResults(data, type) {
 // Init
 updateDateDisplay();
 fetchCandidates();
+</script>
+<div style="margin-top:24px;padding:12px 0;text-align:center;border-top:1px solid rgba(255,255,255,.04);font-size:10px;color:#636366;line-height:1.8">
+  
+  <div style="font-size:9px;color:#4a4a50">比赛时间以所选时区为准</div>
+</div>
+<script>
+var userTz = 'Asia/Shanghai';
+function changeTz(tz) { userTz = tz; if(typeof renderCandidates==="function") renderCandidates(); }
+
+function tzTime(dateStr, timeStr) {
+  // dateStr = YYYY-MM-DD (China time), timeStr = YYYY-MM-DD HH:MM (China time)
+  // Convert to user's timezone
+  try {
+    var dt = timeStr && timeStr.length > 10 ? new Date(timeStr.replace(' ','T')+'+08:00') : new Date(dateStr+'T12:00:00+08:00');
+    return dt.toLocaleDateString('zh-CN', {month:'short',day:'numeric',timeZone:userTz}) + ' ' +
+           dt.toLocaleTimeString('zh-CN', {hour:'2-digit',minute:'2-digit',timeZone:userTz});
+  } catch(e) { return dateStr; }
+}
 </script>
 </body>
 </html>

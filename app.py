@@ -1,5 +1,6 @@
 """K38 Tip - Football Betting Recommendation Engine (Updated Flow)"""
 import json, sqlite3, math, itertools, random
+from odds_service import get_odds_for_fixture, calculate_ev
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from engine.poisson import PoissonModel
@@ -81,6 +82,9 @@ def index():
 @app.route("/v<int:vid>")
 @app.route("/v<int:vid>/")
 def version(vid):
+    if vid == 81: return render_template("v81-home.html")
+    if vid == 83: return render_template("v83-home.html")
+    if vid == 84: return render_template("v84-home.html")
     return render_template(f"v{vid}.html")
 
 @app.route("/api/candidates")
@@ -109,6 +113,40 @@ def api_candidates():
             (sum(away_corners)/len(away_corners) if away_corners else 3.5), 1
         )
 
+        # Fetch odds from The Odds API (try, fail gracefully)
+        odds_data = None
+        try:
+            # Map league name to sport key
+            sport_key = "soccer_fifa_world_cup"
+            lid = str(m["league_id"])
+            if lid == "39": sport_key = "soccer_epl"
+            elif lid == "140": sport_key = "soccer_spain_la_liga"
+            elif lid == "135": sport_key = "soccer_italy_serie_a"
+            elif lid == "78": sport_key = "soccer_germany_bundesliga"
+            elif lid == "61": sport_key = "soccer_france_ligue_one"
+            elif lid == "41": sport_key = "soccer_china_superleague"
+            elif lid == "98": sport_key = "soccer_japan_j_league"
+            elif lid == "292": sport_key = "soccer_korea_kleague1"
+            
+            odds = get_odds_for_fixture(m["home_team"], m["away_team"], sport_key=sport_key)
+            if odds and odds.get("home_odds"):
+                ev = calculate_ev(
+                    max(hw, aw), min(hw, aw),
+                    odds.get("home_odds") if hw >= aw else odds.get("away_odds"),
+                    odds.get("away_odds") if hw >= aw else odds.get("home_odds")
+                )
+                odds_data = {
+                    "home_odds": odds.get("home_odds"),
+                    "away_odds": odds.get("away_odds"),
+                    "draw_odds": odds.get("draw_odds"),
+                    "bookmaker": odds.get("bookmaker", ""),
+                    "edge_pct": ev["edge_pct"] if ev else None,
+                    "ev_pct": ev["ev_pct"] if ev else None,
+                    "kelly": ev["kelly_fraction"] if ev else None,
+                }
+        except:
+            pass
+
         results.append({
             "id": m["fixture_id"],
             "date": m["match_date"],
@@ -127,6 +165,7 @@ def api_candidates():
             "btts": round(pred["btts"], 2) if isinstance(pred.get("btts"), float) else 0,
             "over_2_5": pred["over_under"]["2.5"]["over"],
             "avg_corners": avg_corners,
+            "odds": odds_data,
         })
 
     # Filter out unreliable predictions
