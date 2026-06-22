@@ -6,7 +6,26 @@
 <title>K38 ⚽ 智荐</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#0d0f14;color:#e8e4f0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','SF Pro',sans-serif;padding:24px 14px 110px;max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body{background:#0d0f14;color:#e8e4f0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','SF Pro',sans-serif;padding:24px 14px 110px;max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+  
+  /* 足球场暗色草地背景 */
+  body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-2;background:#0a0e0a}
+  body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;
+    background:
+      /* 草地条纹 */
+      repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(20,50,20,.08) 40px,rgba(20,50,20,.08) 41px),
+      /* 中线 */
+      linear-gradient(to right,transparent 49.5%,rgba(60,120,60,.06) 49.5%,rgba(60,120,60,.06) 50.5%,transparent 50.5%),
+      /* 中圈 */
+      radial-gradient(ellipse 80px 80px at 50% 50%,transparent 49%,rgba(60,120,60,.04) 49%,rgba(60,120,60,.04) 51%,transparent 51%),
+      /* 罚球区(大禁区) - 顶部 */
+      radial-gradient(ellipse 120px 40px at 50% 60px,transparent 49%,rgba(60,120,60,.03) 49%,rgba(60,120,60,.03) 51%,transparent 51%),
+      /* 罚球区(大禁区) - 底部 */
+      radial-gradient(ellipse 120px 40px at 50% calc(100% - 60px),transparent 49%,rgba(60,120,60,.03) 49%,rgba(60,120,60,.03) 51%,transparent 51%),
+      /* 底部暗绿色渐变 */
+      radial-gradient(ellipse at 50% 100%,rgba(30,80,30,.06) 0%,transparent 70%),
+      radial-gradient(ellipse at 50% 0%,rgba(30,80,30,.04) 0%,transparent 70%);
+    pointer-events:none;opacity:.6}
   h1{font-size:18px;font-weight:700;margin-bottom:20px;color:#c8b8e8;letter-spacing:-.3px;text-align:center}
   h1 span{color:#7c5cbf}
   .tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
@@ -26,7 +45,7 @@
   .legend.s{display:flex}
   .ml{display:none}
   .ml.s{display:block}
-  .mc{background:linear-gradient(135deg,#161122,#1a1428);border:1px solid #2a2040;border-radius:10px;margin-bottom:4px;cursor:pointer;transition:.15s;padding:10px 12px}
+  .mc{background:linear-gradient(135deg,rgba(22,17,34,.85),rgba(26,20,40,.85));border:1px solid rgba(42,32,64,.6);border-radius:10px;margin-bottom:4px;cursor:pointer;transition:.15s;padding:10px 12px;backdrop-filter:blur(4px)}
   .mc:hover{border-color:#3c3060}
   .mc.sel{border-color:#7c5cbf;box-shadow:0 0 12px rgba(124,92,191,.08)}
   .mc-row{display:flex;align-items:center;gap:8px}
@@ -89,6 +108,13 @@
   .ar-row .hit{color:#3fb950}
   .ar-close{padding:10px 0;text-align:center;color:#6a5a80;font-size:11px;cursor:pointer;margin-top:8px}
   .ar-close:hover{color:#a080d8}
+  .ar-actions{display:flex;gap:8px;margin-top:10px;justify-content:center}
+  .ar-btn{padding:8px 16px;border-radius:8px;border:1px solid #2a2040;background:linear-gradient(135deg,#161122,#1a1428);color:#8b7fa0;font-size:11px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:4px}
+  .ar-btn:hover{border-color:#5c4090;color:#a080d8}
+  .ar-btn.primary{background:linear-gradient(135deg,#7c5cbf,#5c3c9f);border:none;color:#fff}
+  .ar-btn.primary:hover{box-shadow:0 4px 12px rgba(124,92,191,.3)}
+  .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#161122;border:1px solid #2a2040;padding:10px 20px;border-radius:10px;font-size:12px;color:#a080d8;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.s{opacity:1}
 
   /* Animations */
   @keyframes ballIn{0%{opacity:0;transform:scale(0) translateY(20px)}60%{transform:scale(1.1) translateY(-4px)}100%{opacity:1;transform:scale(1) translateY(0)}}
@@ -245,8 +271,69 @@ function showResult(n,el){
     html+=`<div class="ar-card" style="padding:8px 14px;font-size:10px"><div class="ar-row" style="padding:4px 0"><span>${name}</span><span class="${m.prediction==='主胜'?'v':'hit'}">${m.prediction}</span></div></div>`;
   });
 
-  html+='<div class="ar-close" onclick="closeAnim()">点击关闭 ✕</div>';
+  html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">📤 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
   el.innerHTML=html;
+}
+
+function saveResult(){
+  const el=document.getElementById('animResult');
+  // Use html2canvas-like approach: build canvas from result content
+  const resultHTML=el.innerHTML;
+  const win=window.open('','_blank');
+  if(win){
+    win.document.write('<html><head><style>body{background:#0d0f14;color:#e8e4f0;font-family:sans-serif;padding:20px;max-width:400px;margin:0 auto}');
+    win.document.write('.ar-card{background:linear-gradient(135deg,#161122,#1a1428);border:1px solid #2a2040;border-radius:12px;padding:14px;margin-bottom:6px}');
+    win.document.write('.ar-title{font-size:13px;font-weight:600;color:#c8b8e8;margin-bottom:10px;text-align:center}');
+    win.document.write('.ar-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2040;font-size:11px;color:#8b7fa0}');
+    win.document.write('.ar-row .v{color:#a080d8;font-weight:600}.ar-row .hit{color:#3fb950}');
+    win.document.write('.header{text-align:center;margin-bottom:16px}.header h2{color:#c8b8e8;font-size:16px}.header .sub{color:#6a5a80;font-size:10px;margin-top:4px}');
+    win.document.write('</style></head><body>');
+    win.document.write('<div class="header"><h2>⚽ K38 智荐</h2><div class="sub">AI 足球推荐 · '+document.getElementById('comboTag').textContent+'</div></div>');
+    // Extract cards from result
+    const cards=el.querySelectorAll('.ar-card');
+    cards.forEach(c=>win.document.write(c.outerHTML));
+    win.document.write('<div style="text-align:center;margin-top:16px;color:#6a5a80;font-size:9px">由 K38 AI 生成 · tip.k38.ai</div>');
+    win.document.write('</body></html>');
+    win.document.close();
+    win.focus();
+    // Try to print/save
+    setTimeout(()=>{
+      win.print();
+      showToast('✅ 已发送到打印机，可保存为PDF或截图');
+    },500);
+  } else {
+    // Fallback: copy to clipboard
+    const text=el.textContent.replace(/\s+/g,' ').trim();
+    navigator.clipboard.writeText('⚽ K38 智荐\n'+text+'\n— 由 K38 AI 生成').then(()=>{
+      showToast('✅ 已复制到剪贴板');
+    }).catch(()=>{
+      showToast('⚠️ 请手动截图保存');
+    });
+  }
+}
+
+function shareResult(){
+  const el=document.getElementById('animResult');
+  const text='⚽ K38 智荐 AI串关分析\n'+el.textContent.replace(/\s+/g,' ').trim()+'\n— tip.k38.ai';
+  if(navigator.share){
+    navigator.share({title:'K38 智荐',text:text,url:window.location.href}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(text).then(()=>{
+      showToast('✅ 已复制，可粘贴发送');
+    });
+  }
+}
+
+function showToast(msg){
+  let t=document.getElementById('toastMsg');
+  if(!t){
+    t=document.createElement('div');t.id='toastMsg';t.className='toast';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;
+  t.classList.add('s');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('s'),2500);
 }
 
 function closeAnim(){
