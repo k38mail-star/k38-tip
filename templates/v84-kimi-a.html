@@ -8,12 +8,12 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:#0d0f14;color:#e8e4f0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','SF Pro',sans-serif;padding:24px 14px 110px;max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
   
-  /* 足球场SVG背景 - 更亮 + 小人踢球 */
-  body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-2;background:radial-gradient(ellipse at 50% 50%,#0f2a0f 0%,#081408 100%)}
+  /* 足球场SVG背景 - 极淡线条 */
+  body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-2;background:radial-gradient(ellipse at 50% 50%,#0d1a0d 0%,#0a120a 100%)}
   body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='g' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Crect width='40' height='40' fill='%23103310'/%3E%3Crect width='20' height='40' fill='%23153e15'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)' opacity='.6'/%3E%3C!-- 球场边界 --%3E%3Crect x='5%25' y='2%25' width='90%25' height='96%25' fill='none' stroke='rgba(80,180,80,.35)' stroke-width='2'/%3E%3C!-- 中线 --%3E%3Cline x1='50%25' y1='2%25' x2='50%25' y2='98%25' stroke='rgba(80,180,80,.25)' stroke-width='1.5'/%3E%3C!-- 中圈 --%3E%3Ccircle cx='50%25' cy='50%25' r='12%25' fill='none' stroke='rgba(80,180,80,.25)' stroke-width='1.5'/%3E%3Ccircle cx='50%25' cy='50%25' r='2' fill='rgba(80,180,80,.25)'/%3E%3C!-- 罚球区 --%3E%3Crect x='35%25' y='2%25' width='30%25' height='18%25' fill='none' stroke='rgba(80,180,80,.2)' stroke-width='1.5'/%3E%3Crect x='42%25' y='2%25' width='16%25' height='8%25' fill='none' stroke='rgba(80,180,80,.15)' stroke-width='1'/%3E%3Crect x='35%25' y='80%25' width='30%25' height='18%25' fill='none' stroke='rgba(80,180,80,.2)' stroke-width='1.5'/%3E%3Crect x='42%25' y='90%25' width='16%25' height='8%25' fill='none' stroke='rgba(80,180,80,.15)' stroke-width='1'/%3E%3Ccircle cx='50%25' cy='13%25' r='2' fill='rgba(80,180,80,.2)'/%3E%3Ccircle cx='50%25' cy='87%25' r='2' fill='rgba(80,180,80,.2)'/%3E%3Cpath d='M 38%25 20%25 A 12%25 6%25 0 0 0 62%25 20%25' fill='none' stroke='rgba(80,180,80,.15)' stroke-width='1'/%3E%3Cpath d='M 38%25 80%25 A 12%25 6%25 0 0 1 62%25 80%25' fill='none' stroke='rgba(80,180,80,.15)' stroke-width='1'/%3E%3C!-- 角球弧 --%3E%3Ccircle cx='5%25' cy='2%25' r='3%25' fill='none' stroke='rgba(80,180,80,.12)' stroke-width='1'/%3E%3Ccircle cx='95%25' cy='2%25' r='3%25' fill='none' stroke='rgba(80,180,80,.12)' stroke-width='1'/%3E%3Ccircle cx='5%25' cy='98%25' r='3%25' fill='none' stroke='rgba(80,180,80,.12)' stroke-width='1'/%3E%3Ccircle cx='95%25' cy='98%25' r='3%25' fill='none' stroke='rgba(80,180,80,.12)' stroke-width='1'/%3E%3C!-- 球员 - 主队（紫色圆点） --%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='15%25,30%25;20%25,25%25;18%25,35%25;15%25,30%25' dur='6s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(124,92,191,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(124,92,191,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='30%25,20%25;35%25,18%25;32%25,28%25;30%25,20%25' dur='8s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(124,92,191,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(124,92,191,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='20%25,45%25;25%25,40%25;22%25,50%25;20%25,45%25' dur='7s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(124,92,191,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(124,92,191,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='25%25,55%25;30%25,52%25;28%25,60%25;25%25,55%25' dur='9s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(124,92,191,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(124,92,191,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='18%25,65%25;23%25,60%25;20%25,70%25;18%25,65%25' dur='6.5s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(124,92,191,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(124,92,191,.4)'/%3E%3C/g%3E%3C!-- 客队（蓝色圆点） --%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='70%25,30%25;65%25,25%25;68%25,35%25;70%25,30%25' dur='7s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(88,130,255,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(88,130,255,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='80%25,20%25;75%25,18%25;78%25,28%25;80%25,20%25' dur='8.5s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(88,130,255,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(88,130,255,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='75%25,45%25;70%25,40%25;73%25,50%25;75%25,45%25' dur='6s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(88,130,255,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(88,130,255,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='78%25,55%25;73%25,52%25;76%25,60%25;78%25,55%25' dur='7.5s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(88,130,255,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(88,130,255,.4)'/%3E%3C/g%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='72%25,65%25;68%25,60%25;70%25,70%25;72%25,65%25' dur='9s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='4' fill='rgba(88,130,255,.5)'/%3E%3Ccircle cx='0' cy='-5' r='3' fill='rgba(88,130,255,.4)'/%3E%3C/g%3E%3C!-- 足球 --%3E%3Cg%3E%3CanimateTransform attributeName='transform' type='translate' values='45%25,40%25;50%25,48%25;55%25,42%25;48%25,50%25;45%25,40%25' dur='4s' repeatCount='indefinite'/%3E%3Ccircle cx='0' cy='0' r='3' fill='rgba(255,255,255,.6)' stroke='rgba(255,255,255,.3)' stroke-width='.5'/%3E%3C/g%3E%3C/svg%3E");
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='g' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Crect width='40' height='40' fill='%23122a12'/%3E%3Crect width='20' height='40' fill='%23103010'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)' opacity='.35'/%3E%3Crect x='5%25' y='2%25' width='90%25' height='96%25' fill='none' stroke='rgba(60,140,60,.12)' stroke-width='2'/%3E%3Cline x1='50%25' y1='2%25' x2='50%25' y2='98%25' stroke='rgba(60,140,60,.08)' stroke-width='1.5'/%3E%3Ccircle cx='50%25' cy='50%25' r='12%25' fill='none' stroke='rgba(60,140,60,.08)' stroke-width='1.5'/%3E%3Ccircle cx='50%25' cy='50%25' r='2' fill='rgba(60,140,60,.08)'/%3E%3Crect x='35%25' y='2%25' width='30%25' height='18%25' fill='none' stroke='rgba(60,140,60,.1)' stroke-width='1.5'/%3E%3Crect x='42%25' y='2%25' width='16%25' height='8%25' fill='none' stroke='rgba(60,140,60,.08)' stroke-width='1'/%3E%3Crect x='35%25' y='80%25' width='30%25' height='18%25' fill='none' stroke='rgba(60,140,60,.1)' stroke-width='1.5'/%3E%3Crect x='42%25' y='90%25' width='16%25' height='8%25' fill='none' stroke='rgba(60,140,60,.08)' stroke-width='1'/%3E%3C/svg%3E");
     background-size:cover;background-position:center;background-repeat:no-repeat;
-    pointer-events:none;opacity:.85}
+    pointer-events:none;opacity:.5}
   
   .app-wrap{position:relative;z-index:0}
   h1{font-size:18px;font-weight:700;margin-bottom:20px;color:#c8b8e8;letter-spacing:-.3px;text-align:center}
@@ -31,8 +31,11 @@
   .ld.s{display:block}
   .ld::after{content:'...';animation:d 1.2s steps(4) infinite}
   @keyframes d{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
-  .legend{display:none;font-size:9px;color:#6a5a80;padding:4px 2px 6px;border-bottom:1px solid #2a2040;margin-bottom:6px;justify-content:space-between}
+  .legend{display:none;font-size:9px;color:#8b7fa0;padding:4px 2px 6px;border-bottom:1px solid #2a2040;margin-bottom:6px;justify-content:space-between}
   .legend.s{display:flex}
+  .legend .ll{display:flex;align-items:center;gap:6px}
+  .legend .ll .t{color:#6a5a80;font-size:8px}
+  .legend .lr{display:flex;align-items:center;gap:4px;font-size:8px;color:#6a5a80}
   .ml{display:none}
   .ml.s{display:block}
   .mc{background:linear-gradient(135deg,rgba(22,17,34,.85),rgba(26,20,40,.85));border:1px solid rgba(42,32,64,.6);border-radius:10px;margin-bottom:4px;cursor:pointer;transition:.15s;padding:10px 12px;backdrop-filter:blur(4px)}
@@ -120,7 +123,7 @@
 <div class="tags" id="tags"></div>
 <div class="dates" id="dates"></div>
 <div class="ld" id="ld">加载中</div>
-<div class="legend" id="legend"><span>🤖 AI 推荐 · 信心指数</span><span>⚡ 越高越可靠</span></div>
+<div class="legend" id="legend"><div class="ll"><span>🤖 AI 推荐</span><span class="t" id="tzDisplay">UTC+8</span></div><div class="lr"><span id="timeDisplay">--:--</span><span>|</span><span>⚡ 越高越可靠</span></div></div>
 <div class="ml" id="ml"></div>
 
 <div class="bb" id="bb">
@@ -168,9 +171,11 @@ function loadPrefs(){
 function savePrefs(){
   try{localStorage.setItem('k38_leagues',JSON.stringify([...st.leagues]))}catch(e){}
 }
-// Debounce for league switching
+// Debounce for league switching - also update date counts
 let _debounceTimer=null;
 function debounceLoad(){
+  // Reset count displays
+  document.querySelectorAll('.date .cnt').forEach(el=>{el.textContent='—'});
   clearTimeout(_debounceTimer);
   _debounceTimer=setTimeout(()=>{
     const sel=document.querySelector('.date.sel');
@@ -184,11 +189,45 @@ function fmtDateLabel(days){
   return (d.getMonth()+1)+'月'+d.getDate()+'日';
 }
 
+// Real-time clock
+function startClock(){
+  function tick(){
+    const d=new Date();
+    const h=String(d.getHours()).padStart(2,'0');
+    const m=String(d.getMinutes()).padStart(2,'0');
+    const el=document.getElementById('timeDisplay');
+    if(el)el.textContent=h+':'+m;
+  }
+  tick();
+  setInterval(tick,10000);
+}
+
+// Get timezone offset string
+function getTZ(){
+  const offset=-new Date().getTimezoneOffset();
+  const h=Math.floor(Math.abs(offset)/60);
+  const sign=offset>=0?'+':'-';
+  return 'UTC'+sign+h;
+}
+
 function init(){
   loadPrefs();
+  // Set timezone
+  const tzEl=document.getElementById('tzDisplay');
+  if(tzEl)tzEl.textContent=getTZ();
+  startClock();
   const tg=document.getElementById('tags');
   LG.forEach((l,i)=>{const e=document.createElement('span');e.className='tag'+(st.leagues.has(l.k)?' sel':'');e.innerHTML=l.f+'&nbsp;'+l.l;
-    e.onclick=()=>{e.classList.toggle('sel');if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')};savePrefs();debounceLoad()};tg.appendChild(e)});
+    e.onclick=()=>{
+      e.classList.toggle('sel');
+      if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);
+      if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')};
+      // Update 全选 button state
+      const allBtn=document.querySelector('.tag:last-child');
+      if(st.leagues.size===LG.length){allBtn.classList.add('sel');allBtn.textContent='✓ 全选'}
+      else{allBtn.classList.remove('sel');allBtn.textContent='全选'}
+      savePrefs();debounceLoad()
+    };tg.appendChild(e)});
   // 全选按钮
   const allBtn=document.createElement('span');allBtn.className='tag';allBtn.textContent='✓ 全选';
   allBtn.onclick=()=>{const allSel=!allBtn.classList.contains('sel');LG.forEach(l=>{if(allSel)st.leagues.add(l.k);else st.leagues.clear()});document.querySelectorAll('.tag').forEach(t=>t.classList.toggle('sel',allSel));allBtn.classList.toggle('sel');allBtn.textContent=allSel?'✓ 全选':'全选';savePrefs();debounceLoad()};
@@ -247,17 +286,29 @@ function render(){
   const seen=new Set();
   st.matches=st.matches.filter(m=>{const key=m.id;if(seen.has(key))return false;seen.add(key);return true});
   
-  // Format match time
+  // Format match time - handle both ISO and date-only formats
   function fmtTime(t){
     if(!t)return '';
-    const d=t.replace('T',' ').replace(/\+.*$/,'').replace(/Z$/,'');
-    const dt=new Date(d+' UTC');
-    if(isNaN(dt.getTime())){
-      // Try as date-only
-      const parts=t.split('-');
-      if(parts.length===3)return parts[1]+'月'+parts[2].substring(0,2)+'日';
-      return t.substring(5,10);
+    let dStr=t;
+    // Handle ISO format: 2026-06-22T17:00:00+00:00 or 2026-06-22T17:00:00Z
+    dStr=dStr.replace('T',' ').replace(/\+00:00$/,'').replace(/Z$/,'').replace(/\+08:00$/,'').trim();
+    // If only date (no time), show friendly date
+    if(dStr.length<=10){
+      const parts=dStr.split('-');
+      if(parts.length===3)return parseInt(parts[1])+'月'+parseInt(parts[2])+'日';
+      return dStr;
     }
+    // Parse as local time
+    const dt=new Date(dStr+' UTC+8');
+    if(isNaN(dt.getTime())){
+      // Fallback: try without timezone
+      const dt2=new Date(dStr);
+      if(isNaN(dt2.getTime()))return dStr.substring(5,10);
+      return fmtDateFromDate(dt2);
+    }
+    return fmtDateFromDate(dt);
+  }
+  function fmtDateFromDate(dt){
     const now=new Date();
     const diff=Math.round((dt-now)/86400000);
     const h=String(dt.getHours()).padStart(2,'0');
@@ -265,7 +316,8 @@ function render(){
     const md=(dt.getMonth()+1)+'月'+dt.getDate()+'日';
     if(diff===0)return '今晚 '+h+':'+m;
     if(diff===1)return '明天 '+h+':'+m;
-    return md+' '+h+':'+m;
+    if(diff>0&&diff<=7)return md+' '+h+':'+m;
+    return md;
   }
   
   st.matches.forEach((m,i)=>{
@@ -279,7 +331,7 @@ function render(){
     else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div>';
     // Add time display
     const timeEl=row.querySelector('.mc-info');
-    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span></div>';
+    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:9px">⚡</span></div>';
     row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
     ml.appendChild(row);
     // Auto-select this match
@@ -371,10 +423,10 @@ function showResult(n,el){
         html+='</div>';
       });
     }
-    html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">📤 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+    html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
     el.innerHTML=html;
   }).catch(()=>{
-    el.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px">加载失败，请重试</div><div class="ar-actions"><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+    el.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px;line-height:1.8">加载失败<br><span style="font-size:10px">请检查网络或减少选择场次</span></div><div class="ar-actions"><div class="ar-btn primary" onclick="closeAnim();setTimeout(function(){document.getElementById(\'gb\').click()},300)">🔄 重试</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
   });
 }
 
