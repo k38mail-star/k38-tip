@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K38 ⚽</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0d1117;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue','PingFang SC',sans-serif;color:#e6edf3}
+  .app{max-width:480px;margin:0 auto;padding:24px 14px 60px}
+  h1{font-size:22px;font-weight:700;margin-bottom:20px;letter-spacing:-.02em}
+
+  /* League row - compact pills */
+  .lg{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+  .lg-p{padding:4px 10px;border-radius:5px;border:1px solid #21262d;font-size:11px;cursor:pointer;color:#8b949e;transition:.1s;user-select:none}
+  .lg-p:hover{border-color:#30363d;color:#e6edf3}
+  .lg-p.sel{border-color:#238636;color:#3fb950;background:rgba(35,134,54,.06)}
+
+  /* Date row */
+  .dt{display:flex;gap:4px;margin-bottom:20px}
+  .dt-b{flex:1;padding:10px;border-radius:6px;border:1px solid #21262d;background:#161b22;font-size:13px;cursor:pointer;text-align:center;font-weight:500;color:#e6edf3;transition:.1s}
+  .dt-b:hover{border-color:#58a6ff}
+  .dt-b.sel{border-color:#238636;background:rgba(35,134,54,.06);color:#3fb950}
+  .dt-b .c{font-size:9px;color:#484f58;font-weight:400;display:block;margin-top:1px}
+
+  /* Loading dots */
+  .ld{display:none;text-align:center;padding:32px;color:#484f58;font-size:12px;letter-spacing:2px}
+  .ld.s{display:block}
+  .ld::after{content:'...';animation:dk 1.2s steps(4) infinite}
+  @keyframes dk{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+
+  /* Match rows - ultra compact */
+  .ml{display:none}
+  .ml.s{display:block}
+  .mr{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#161b22;border:1px solid #21262d;border-radius:6px;margin-bottom:3px;cursor:pointer;transition:.1s}
+  .mr:hover{border-color:#30363d}
+  .mr.sel{border-color:#d9a05b;box-shadow:0 0 0 1px rgba(217,160,91,.2)}
+  .ck{width:16px;height:16px;border-radius:4px;border:1.5px solid #30363d;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent}
+  .ck.on{border-color:#238636;background:#238636;color:#fff}
+  .mi{flex:1;min-width:0}
+  .mt{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mm{font-size:10px;color:#8b949e;margin-top:1px;display:flex;gap:6px}
+  .mm .tag{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:500}
+  .tag-g{background:rgba(35,134,54,.1);color:#3fb950}
+  .tag-b{background:rgba(88,166,255,.1);color:#58a6ff}
+  .edge{cursor:pointer;font-weight:600;color:#d29922}
+  .mr-info{text-align:right;flex-shrink:0;font-size:10px;color:#8b949e;line-height:1.3}
+
+  /* Bottom bar */
+  .bb{display:none;position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #21262d;padding:8px 14px;z-index:100}
+  .bb.s{display:block}
+  .bb-i{max-width:480px;margin:0 auto;display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .bb-c{font-size:12px;color:#8b949e}
+  .bb-c span{color:#3fb950;font-weight:600}
+  .bb-btn{padding:8px 16px;border-radius:6px;border:none;background:#238636;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
+  .bb-btn:disabled{opacity:.3;cursor:default}
+
+  @media(max-width:400px){.app{padding:16px 10px 56px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>今天买什么？</h1>
+
+  <div class="lg" id="lg"></div>
+  <div class="dt" id="dt"></div>
+  <div class="ld" id="ld">加载中</div>
+  <div class="ml" id="ml"></div>
+</div>
+
+<div class="bb" id="bb">
+  <div class="bb-i">
+    <div class="bb-c">已选 <span id="sc">0</span> 场</div>
+    <button class="bb-btn" id="gb" disabled>🎯 串关</button>
+  </div>
+</div>
+
+<script>
+const LEAGUES = [
+  {k:'epl', id:39, l:'英超', f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
+  {k:'la', id:140, l:'西甲', f:'🇪🇸'},
+  {k:'sa', id:135, l:'意甲', f:'🇮🇹'},
+  {k:'bl', id:78, l:'德甲', f:'🇩🇪'},
+  {k:'l1', id:61, l:'法甲', f:'🇫🇷'},
+  {k:'wc', id:1, l:'世界杯', f:'🌍'},
+];
+
+let st = { leagues: new Set(), picks: new Set(), matches: [] };
+
+function init() {
+  // Leagues
+  const lg = document.getElementById('lg');
+  LEAGUES.forEach(l => {
+    const el = document.createElement('span');
+    el.className = 'lg-p sel';
+    el.textContent = l.f + ' ' + l.l;
+    el.onclick = () => tgLg(l.k);
+    lg.appendChild(el);
+    st.leagues.add(l.k);
+  });
+  // Select all indicator
+  document.querySelector('.lg-p:last-child').textContent += ' ✓';
+
+  // Dates
+  const dt = document.getElementById('dt');
+  const ds = [
+    {l:'今天', d:0},
+    {l:'3天', d:2},
+    {l:'5天', d:4},
+    {l:'7天', d:6},
+  ];
+  ds.forEach(r => {
+    const el = document.createElement('div');
+    el.className = 'dt-b';
+    el.innerHTML = r.l + ' <span class="c">—</span>';
+    el.onclick = () => pkDt(el, r);
+    dt.appendChild(el);
+  });
+}
+
+function tgLg(k) {
+  const el = document.querySelectorAll('.lg-p');
+  const all = el[el.length-1];
+  const thisEl = [...el].find(e => e.textContent.includes(LEAGUES.find(l=>l.k===k)?.l));
+  if (!thisEl) return;
+
+  if (k === 'wc') { // "all" is the last one - toggle all
+    const allSel = !all.classList.contains('sel');
+    st.leagues.clear();
+    el.forEach(e => { 
+      e.classList.toggle('sel', allSel);
+      const txt = e.textContent.replace(' ✓','');
+      e.textContent = txt;
+    });
+    if (allSel) {
+      LEAGUES.forEach(l => st.leagues.add(l.k));
+      all.textContent += ' ✓';
+    }
+    return;
+  }
+
+  thisEl.classList.toggle('sel');
+  const txt = thisEl.textContent.replace(' ✓','');
+  if(thisEl.classList.contains('sel')) {
+    st.leagues.add(k);
+    thisEl.textContent = txt;
+  } else {
+    st.leagues.delete(k);
+    thisEl.textContent = txt;
+  }
+
+  // Update all indicator
+  if (st.leagues.size === LEAGUES.length) {
+    all.classList.add('sel');
+    all.textContent = all.textContent.replace(' ✓','') + ' ✓';
+  } else {
+    all.classList.remove('sel');
+    all.textContent = all.textContent.replace(' ✓','');
+  }
+
+  if (st.leagues.size === 0) {
+    st.leagues.add('wc');
+    document.querySelectorAll('.lg-p')[LEAGUES.length-1].classList.add('sel');
+    document.querySelectorAll('.lg-p')[LEAGUES.length-1].textContent += ' ✓';
+  }
+}
+
+function pkDt(el, range) {
+  document.querySelectorAll('.dt-b').forEach(b => b.classList.remove('sel'));
+  el.classList.add('sel');
+  load(range);
+}
+
+function load(range) {
+  const ld = document.getElementById('ld');
+  const ml = document.getElementById('ml');
+  ld.classList.add('s');
+  ml.classList.remove('s');
+
+  const now = new Date();
+  const to = new Date(now);
+  to.setDate(to.getDate() + range.d);
+  const f = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+
+  const lids = [...st.leagues].map(k => LEAGUES.find(l=>l.k===k).id);
+
+  fetch('/api/candidates?date_from='+f(now)+'&date_to='+f(to)+'&leagues='+lids.join(','))
+    .then(r => r.json())
+    .then(d => {
+      ld.classList.remove('s');
+      st.matches = d.matches || [];
+      st.picks.clear();
+      render();
+    })
+    .catch(() => {
+      ld.classList.remove('s');
+      ml.innerHTML = '<div style="text-align:center;padding:32px;color:#484f58;font-size:12px">加载失败</div>';
+      ml.classList.add('s');
+    });
+}
+
+function render() {
+  const ml = document.getElementById('ml');
+  const bb = document.getElementById('bb');
+  ml.innerHTML = '';
+
+  if (!st.matches.length) {
+    ml.innerHTML = '<div style="text-align:center;padding:32px;color:#484f58;font-size:12px">暂无推荐</div>';
+    ml.classList.add('s');
+    bb.classList.remove('s');
+    return;
+  }
+
+  ml.classList.add('s');
+  bb.classList.add('s');
+
+  st.matches.forEach((m, i) => {
+    const isH = m.prediction === '主胜';
+    const odds = m.odds ? (isH ? m.odds.home_odds : m.odds.away_odds) : null;
+    const edge = m.odds && m.odds.edge_pct;
+    const tN = m.home_cn || m.home;
+    const aN = m.away_cn || m.away;
+
+    const row = document.createElement('div');
+    row.className = 'mr';
+    row.innerHTML = `
+      <div class="ck on">✓</div>
+      <div class="mi">
+        <div class="mt">${m.home_flag||''} ${tN} vs ${aN} ${m.away_flag||''}</div>
+        <div class="mm">
+          <span class="tag ${isH?'tag-g':'tag-b'}">${m.prediction}</span>
+          ${odds?'<span>@'+odds+'</span>':''}
+          ${edge?'<span class="edge">+'+edge+'%</span>':''}
+        </div>
+      </div>
+      <div class="mr-info">${m.confidence}%<br>${m.league.slice(-4)}</div>
+    `;
+
+    const ck = row.querySelector('.ck');
+    ck.onclick = e => {
+      e.stopPropagation();
+      ck.classList.toggle('on');
+      ck.textContent = ck.classList.contains('on') ? '✓' : '';
+      if (ck.classList.contains('on')) st.picks.add(m.id);
+      else st.picks.delete(m.id);
+      upBt();
+    };
+    row.onclick = () => { ck.click(); };
+    row.classList.add('sel');
+
+    ml.appendChild(row);
+    st.picks.add(m.id);
+  });
+
+  upBt();
+}
+
+function upBt() {
+  const n = st.picks.size;
+  document.getElementById('sc').textContent = n;
+  document.getElementById('gb').disabled = n < 2;
+}
+
+init();
+</script>
+</body>
+</html>

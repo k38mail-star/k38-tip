@@ -185,6 +185,21 @@ def v83():
 def v84():
     return render_template("v84.html")
 
+@app.route("/v84/ds")
+@app.route("/v84-ds")
+def v84_ds():
+    return render_template("v84-ds.html")
+
+@app.route("/v84/codex")
+@app.route("/v84-codex")
+def v84_codex():
+    return render_template("v84-codex.html")
+
+@app.route("/v84/kimi")
+@app.route("/v84-kimi")
+def v84_kimi():
+    return render_template("v84-kimi.html")
+
 @app.route("/api/generate-combos")
 def api_generate_combos():
     """生成所有串关组合，Monte Carlo 模拟排序"""
