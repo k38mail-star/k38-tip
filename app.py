@@ -1,5 +1,5 @@
 """K38 Tip - Football Betting Recommendation Engine (Updated Flow)"""
-import json, sqlite3, math, itertools
+import json, sqlite3, math, itertools, time
 from contextlib import contextmanager
 from odds_service import get_odds_for_fixture, calculate_ev
 from flask import Flask, render_template, jsonify, request
@@ -27,8 +27,36 @@ _poisson = None
 _monte = None
 _pred_cache = {}  # fixture_id -> prediction data cache
 _odds_cache = {}  # (home, away, sport) -> odds data cache
-_odds_failed = False  # Circuit breaker: if odds API fails once, skip all
+# Circuit breaker: track consecutive failures + cooldown
+_odds_fail_count = 0
+_odds_fail_time = 0.0
+_ODDS_FAIL_THRESHOLD = 3   # Trip after 3 consecutive failures
+_ODDS_COOLDOWN_SEC = 300   # Re-attempt after 5 minutes
 _MAX_CACHE = 500
+
+
+def odds_circuit_open():
+    """Check if odds circuit breaker is open (should skip API calls)."""
+    if _odds_fail_count < _ODDS_FAIL_THRESHOLD:
+        return False
+    # Breaker tripped — check if cooldown has elapsed
+    if time.time() - _odds_fail_time >= _ODDS_COOLDOWN_SEC:
+        return False  # Allow retry (half-open)
+    return True
+
+
+def odds_record_failure():
+    """Record an odds API failure."""
+    global _odds_fail_count, _odds_fail_time
+    _odds_fail_count += 1
+    _odds_fail_time = time.time()
+
+
+def odds_record_success():
+    """Reset circuit breaker on success."""
+    global _odds_fail_count, _odds_fail_time
+    _odds_fail_count = 0
+    _odds_fail_time = 0.0
 
 def cache_pred(fid, pred):
     _pred_cache[fid] = pred
@@ -79,45 +107,18 @@ def get_candidate_matches(limit=100, date_from=None, date_to=None, league_ids=No
         """, params).fetchall()
         return [dict(r) for r in rows]
 
-def get_stats_for_team(team, stat_type, limit=5):
-    import json as j
-    with get_db() as conn:
-        rows = conn.execute("""
-            SELECT events, home_team, away_team
-            FROM football_matches
-            WHERE (home_team=? OR away_team=?) AND events IS NOT NULL AND events!='[]'
-            ORDER BY match_date DESC LIMIT ?
-        """, (team, team, limit)).fetchall()
-    results = []
-    for r in rows:
-        try: evs = j.loads(r["events"])
-        except: continue
-        count = 0; is_home = r["home_team"] == team
-        for ev in evs:
-            if not isinstance(ev, dict): continue
-            if stat_type == "goals" and ev.get("type") == "Goal":
-                if (is_home and ev.get("team") in ["home", team]) or (not is_home and ev.get("team") in ["away", team]): count += 1
-            elif stat_type == "corners" and ev.get("type") == "Corner":
-                if (is_home and ev.get("team") in ["home", team]) or (not is_home and ev.get("team") in ["away", team]): count += 1
-        results.append(count)
-    return results
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("v84-kimi-a.html")
 
-@app.route("/v<int:vid>")
-@app.route("/v<int:vid>/")
-def version(vid):
-    name = {2:"v2", 3:"v3", 4:"v4", 5:"v5", 81:"v81-home"}
-    tmpl = name.get(vid)
-    if tmpl:
-        return render_template(tmpl+".html")
-    return "版本不存在", 404
+@app.route("/v84")
+@app.route("/v84/")
+def v84_page():
+    return render_template("v84-kimi-a.html")
 
 def build_candidate_results(limit=100, date_from=None, date_to=None, league_ids=None):
     """生成候选比赛数据（含预测），供 API 和模板共用"""
-    global _odds_failed
     poisson, _ = get_engine()
     matches = get_candidate_matches(limit, date_from, date_to, league_ids)
     results = []
@@ -142,7 +143,7 @@ def build_candidate_results(limit=100, date_from=None, date_to=None, league_ids=
             winner = "draw"
         confidence = round(max(hw, aw, dw) * 100, 1)
         odds_data = None
-        if not _odds_failed:
+        if not odds_circuit_open():
             try:
                 sport_key = "soccer_fifa_world_cup"
                 lid = str(m["league_id"])
@@ -171,8 +172,11 @@ def build_candidate_results(limit=100, date_from=None, date_to=None, league_ids=
                             "edge_pct": ev.get("edge_pct") if ev else None,
                         }
                         _odds_cache[cache_key] = odds_data
+                        odds_record_success()
+                    else:
+                        odds_record_failure()
             except Exception:
-                _odds_failed = True
+                odds_record_failure()
                 odds_data = None
         results.append({
             "id": m["fixture_id"],
