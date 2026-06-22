@@ -15,6 +15,15 @@ DB = "/opt/k38-football/football.db"
 _poisson = None
 _monte = None
 _pred_cache = {}  # fixture_id -> prediction data cache
+_MAX_CACHE = 500
+
+def cache_pred(fid, pred):
+    _pred_cache[fid] = pred
+    if len(_pred_cache) > _MAX_CACHE:
+        # Remove oldest entries
+        keys = list(_pred_cache.keys())[:100]
+        for k in keys:
+            _pred_cache.pop(k, None)
 
 def get_engine():
     global _poisson, _monte
@@ -104,7 +113,7 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
         else:
             pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
             if "error" not in pred:
-                _pred_cache[fid] = pred
+                cache_pred(fid, pred)
         if "error" in pred: continue
         hw = pred["win_prob"]["home"]
         aw = pred["win_prob"]["away"]
@@ -260,7 +269,14 @@ def api_generate_combos():
     poisson, _ = get_engine()
 
     # Build all combinations
-    match_list = [(int(mid), match_map.get(int(mid))) for mid in match_ids if int(mid) in match_map]
+    match_list = []
+    for mid in match_ids:
+        try:
+            fid = int(mid)
+            if fid in match_map:
+                match_list.append((fid, match_map[fid]))
+        except (ValueError, TypeError):
+            continue
     if len(match_list) < parlay_type:
         return jsonify({"error": "Not enough valid matches"})
 
@@ -278,7 +294,7 @@ def api_generate_combos():
             else:
                 pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
                 if "error" not in pred:
-                    _pred_cache[fid] = pred
+                    cache_pred(fid, pred)
             if "error" in pred: continue
             hw = pred["win_prob"]["home"]
             aw = pred["win_prob"]["away"]
