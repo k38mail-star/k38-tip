@@ -29,20 +29,35 @@
 
   .ml{display:none}
   .ml.s{display:block}
-  .mc{display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#161122,#1a1428);border:1px solid #2a2040;border-radius:10px;margin-bottom:4px;cursor:pointer;transition:.15s}
+
+  /* Card - new layout with badge under recommended team */
+  .mc{background:linear-gradient(135deg,#161122,#1a1428);border:1px solid #2a2040;border-radius:10px;margin-bottom:4px;cursor:pointer;transition:.15s;padding:10px 12px}
   .mc:hover{border-color:#3c3060}
   .mc.sel{border-color:#7c5cbf;box-shadow:0 0 12px rgba(124,92,191,.08)}
+  
+  .mc-row{display:flex;align-items:center;gap:8px}
   .ck{width:18px;height:18px;border-radius:6px;border:2px solid #3c3060;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:transparent;cursor:pointer;transition:.15s}
   .ck.on{background:#7c5cbf;border-color:#7c5cbf;color:#fff;box-shadow:0 0 8px rgba(124,92,191,.3)}
-  .mi{flex:1;min-width:0}
-  .mt{font-size:12px;font-weight:500;color:#e8e4f0}
-  .mm{font-size:10px;color:#8b7fa0;margin-top:2px;display:flex;gap:6px;align-items:center}
-  .mm .bd{padding:1px 6px;border-radius:4px;font-size:9px;font-weight:500}
-  .bd-g{background:rgba(124,92,191,.12);color:#a080d8}
-  .bd-b{background:rgba(88,130,255,.12);color:#6a8fff}
-  .mm .ev{color:#d4a060;font-weight:600;font-size:10px}
-  .mr{text-align:right;flex-shrink:0;font-size:10px;color:#8b7fa0;line-height:1.4}
-  .mr .vl{font-weight:600;color:#a080d8}
+
+  /* Teams area */
+  .mc-teams{flex:1;display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
+  .mc-t{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;min-width:0}
+  .mc-t-name{font-size:13px;font-weight:500;color:#e8e4f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .mc-t-flag{font-size:18px;line-height:1}
+  
+  /* Recommendation badge - positioned under the recommended team */
+  .mc-rec{font-size:9px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap;margin-top:2px}
+  .mc-rec-home{background:rgba(124,92,191,.15);color:#a080d8}
+  .mc-rec-away{background:rgba(88,130,255,.15);color:#6a8fff}
+  .mc-rec-draw{background:rgba(210,160,96,.15);color:#d4a060}
+  
+  .mc-vs{font-size:10px;color:#4a3a60;flex-shrink:0;padding:0 4px}
+
+  /* Right info */
+  .mc-info{text-align:right;flex-shrink:0;font-size:10px;color:#8b7fa0;line-height:1.4}
+  .mc-info .vl{font-weight:600;color:#a080d8;font-size:13px}
+  .mc-info .odds{color:#d4a060;font-size:10px}
+  .mc-info .edge{color:#3fb950;font-size:9px}
 
   .bb{display:none;position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#120e20,#1a1440);border-top:1px solid #2a2040;padding:10px 14px;z-index:100;backdrop-filter:blur(8px)}
   .bb.s{display:block}
@@ -113,11 +128,50 @@ function render(){
   const bb=document.getElementById('bb');
   if(!st.matches.length){ml.innerHTML='<div style="padding:32px;text-align:center;color:#6a5a80;font-size:12px">暂无推荐比赛</div>';ml.classList.add('s');bb.classList.remove('s');return}
   ml.classList.add('s');bb.classList.add('s');
+  
   st.matches.forEach((m,i)=>{
-    const ih=m.prediction==='主胜';const odds=m.odds?(ih?m.odds.home_odds:m.odds.away_odds):null;
-    const edge=m.odds&&m.odds.edge_pct;
+    const pred=m.prediction;
+    const isHome=pred==='主胜';
+    const isAway=pred==='客胜';
+    const isDraw=pred==='平局';
+    
+    // Odds: home_odds for 主胜, away_odds for 客胜, draw_odds or average for 平局
+    let odds=null, edge=null;
+    if(m.odds){
+      if(isHome) odds=m.odds.home_odds;
+      else if(isAway) odds=m.odds.away_odds;
+      else if(isDraw) odds=m.odds.draw_odds;
+      edge=m.odds.edge_pct;
+    }
+    
+    const homeFlag=m.home_flag||'⚽';
+    const awayFlag=m.away_flag||'⚽';
+    const homeName=m.home_cn||m.home;
+    const awayName=m.away_cn||m.away;
+    
+    // Badge class: under home, under away, or centered for draw
+    let recClass='mc-rec-home'; // default
+    if(isAway) recClass='mc-rec-away';
+    else if(isDraw) recClass='mc-rec-draw';
+    
+    // For 平局, badge goes in center; for 主胜 under home; for 客胜 under away
+    let badgeHtml='';
+    if(isDraw){
+      badgeHtml='<div class="mc-rec '+recClass+'" style="margin:0 auto">⚖️ '+pred+(odds?' @'+odds:'')+(edge?' +'+edge+'%':'')+'</div>';
+    } else {
+      badgeHtml='<div class="mc-rec '+recClass+'">🏆 '+pred+(odds?' @'+odds:'')+(edge?' +'+edge+'%':'')+'</div>';
+    }
+    
     const row=document.createElement('div');row.className='mc sel';
-    row.innerHTML='<div class="ck on">✓</div><div class="mi"><div class="mt">'+(m.home_flag||'')+' '+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+' '+(m.away_flag||'')+'</div><div class="mm"><span class="bd '+(ih?'bd-g':'bd-b')+'">'+m.prediction+'</span>'+(odds?'<span>@'+odds+'</span>':'')+(edge?'<span class="ev">+'+edge+'%</span>':'')+'</div></div><div class="mr"><div class="vl">'+m.confidence+'%</div><div>'+m.league.slice(-4)+'</div></div>';
+    
+    if(isDraw){
+      // Draw: badge in center
+      row.innerHTML='<div class="mc-row"><div class="ck on">✓</div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+homeFlag+'</span><span class="mc-t-name">'+homeName+'</span></div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+awayFlag+'</span><span class="mc-t-name">'+awayName+'</span></div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div><div class="odds">'+m.league.slice(-4)+'</div></div></div><div style="text-align:center;margin-top:4px">'+badgeHtml+'</div>';
+    } else {
+      // Home or Away: badge under the recommended team
+      row.innerHTML='<div class="mc-row"><div class="ck on">✓</div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+homeFlag+'</span><span class="mc-t-name">'+homeName+'</span>'+(isHome?badgeHtml:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+awayFlag+'</span><span class="mc-t-name">'+awayName+'</span>'+(isAway?badgeHtml:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div><div class="odds">'+m.league.slice(-4)+'</div></div></div>';
+    }
+    
     const ck=row.querySelector('.ck');
     ck.onclick=e=>{e.stopPropagation();ck.classList.toggle('on');ck.textContent=ck.classList.contains('on')?'✓':'';if(ck.classList.contains('on'))st.picks.add(m.id);else st.picks.delete(m.id);up()};
     row.onclick=()=>ck.click();

@@ -102,8 +102,15 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
         if "error" in pred: continue
         hw = pred["win_prob"]["home"]
         aw = pred["win_prob"]["away"]
-        winner = "home" if hw >= aw else "away"
-        confidence = round(max(hw, aw) * 100, 1)
+        dw = pred["win_prob"]["draw"]
+        # Pick highest probability
+        if hw >= aw and hw >= dw:
+            winner = "home"
+        elif aw >= hw and aw >= dw:
+            winner = "away"
+        else:
+            winner = "draw"
+        confidence = round(max(hw, aw, dw) * 100, 1)
         home_corners = get_stats_for_team(m["home_team"], "corners")
         away_corners = get_stats_for_team(m["away_team"], "corners")
         avg_corners = round(
@@ -151,7 +158,7 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
             "home_flag": m.get("home_flag", ""),
             "away_flag": m.get("away_flag", ""),
             "league": m["league_name"],
-            "prediction": "主胜" if winner == "home" else "客胜",
+            "prediction": "主胜" if winner == "home" else ("客胜" if winner == "away" else "平局"),
             "confidence": confidence,
             "home_xg": pred["home_xg"],
             "away_xg": pred["away_xg"],
