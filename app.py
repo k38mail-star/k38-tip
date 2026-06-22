@@ -190,7 +190,7 @@ def v83():
 @app.route("/v84")
 @app.route("/v84/")
 def v84():
-    return render_template("v84-kimi.html")
+    return render_template("v84-kimi-a.html")
 
 @app.route("/v84/ds")
 @app.route("/v84-ds")
@@ -206,6 +206,21 @@ def v84_codex():
 @app.route("/v84-kimi")
 def v84_kimi():
     return render_template("v84-kimi.html")
+
+@app.route("/v84/a")
+@app.route("/v84-a")
+def v84_a():
+    return render_template("v84-kimi-a.html")
+
+@app.route("/v84/b")
+@app.route("/v84-b")
+def v84_b():
+    return render_template("v84-kimi-b.html")
+
+@app.route("/v84/c")
+@app.route("/v84-c")
+def v84_c():
+    return render_template("v84-kimi-c.html")
 
 @app.route("/api/generate-combos")
 def api_generate_combos():
