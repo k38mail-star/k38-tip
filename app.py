@@ -33,24 +33,23 @@ def get_candidate_matches(limit=30, date_from=None, date_to=None, league_ids=Non
     where = ["status IN ('Not Started', 'NS')"]
     params = []
     if date_from:
-        where.append("match_date >= ?")
+        where.append("DATE(match_date) >= ?")
         params.append(date_from)
     if date_to:
-        where.append("match_date <= ?")
+        where.append("DATE(match_date) <= ?")
         params.append(date_to)
     if league_ids:
         placeholders = ",".join("?" for _ in league_ids)
         where.append(f"league_id IN ({placeholders})")
         params.extend(league_ids)
     where_sql = " AND ".join(where)
-    params.append(limit)
     rows = conn.execute(f"""
         SELECT fixture_id, home_team, away_team, home_team_cn, away_team_cn,
                home_flag, away_flag, match_date, league_name, league_id,
                match_date as match_time
         FROM football_matches
         WHERE {where_sql}
-        ORDER BY match_date ASC LIMIT ?
+        ORDER BY match_date ASC LIMIT 30
     """, params).fetchall()
     conn.close()
     return [dict(r) for r in rows]

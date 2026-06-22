@@ -173,24 +173,65 @@ function load(r){
   fetch('/api/candidates?date_from='+f(n)+'&date_to='+f(t)+'&leagues='+lids.join(',')).then(r=>r.json()).then(d=>{ld.classList.remove('s');st.matches=d.matches||[];st.picks=new Set();render()}).catch(()=>{ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#6a5a80;font-size:12px">加载失败</div>';ml.classList.add('s')});}
 function render(){
   const ml=document.getElementById('ml');ml.innerHTML='';const lg=document.getElementById('legend');const bb=document.getElementById('bb');
-  if(!st.matches.length){ml.innerHTML='<div style="padding:32px;text-align:center;color:#6a5a80;font-size:12px">暂无推荐比赛</div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
+  if(!st.matches.length){ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
   ml.classList.add('s');lg.classList.add('s');bb.classList.add('s');
+  
+  // Deduplicate by fixture_id (keep first occurrence)
+  const seen=new Set();
+  st.matches=st.matches.filter(m=>{const key=m.id;if(seen.has(key))return false;seen.add(key);return true});
+  
+  // Format match time
+  function fmtTime(t){
+    if(!t)return '';
+    const d=t.replace('T',' ').replace(/\+.*$/,'').replace(/Z$/,'');
+    const dt=new Date(d+' UTC');
+    if(isNaN(dt.getTime())){
+      // Try as date-only
+      const parts=t.split('-');
+      if(parts.length===3)return parts[1]+'月'+parts[2].substring(0,2)+'日';
+      return t.substring(5,10);
+    }
+    const now=new Date();
+    const diff=Math.round((dt-now)/86400000);
+    const h=String(dt.getHours()).padStart(2,'0');
+    const m=String(dt.getMinutes()).padStart(2,'0');
+    const md=(dt.getMonth()+1)+'月'+dt.getDate()+'日';
+    if(diff===0)return '今晚 '+h+':'+m;
+    if(diff===1)return '明天 '+h+':'+m;
+    return md+' '+h+':'+m;
+  }
+  
   st.matches.forEach((m,i)=>{
     const p=m.prediction,ih=p==='主胜',ia=p==='客胜',id=p==='平局';let odds=null;if(m.odds){if(ih)odds=m.odds.home_odds;else if(ia)odds=m.odds.away_odds;else if(id)odds=m.odds.draw_odds}
     const ed=m.odds&&m.odds.edge_pct,hF=m.home_flag||'⚽',aF=m.away_flag||'⚽',hN=m.home_cn||m.home,aN=m.away_cn||m.away;
     let rc=ia?'mc-rec-away':(id?'mc-rec-draw':'mc-rec-home'),ai='<span class="ai-tag">AI</span>',bd='';
     if(id)bd='<div class="mc-rec '+rc+'">'+ai+' ⚖️ '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     else bd='<div class="mc-rec '+rc+'">'+ai+' 🏆 '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
-    const row=document.createElement('div');row.className='mc sel';
-    if(id)row.innerHTML='<div class="mc-row"><div class="ck on">✓</div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info"><span class="lb">信心</span><div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
-    else row.innerHTML='<div class="mc-row"><div class="ck on">✓</div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><span class="lb">信心</span><div class="vl">'+m.confidence+'%</div></div></div>';
+    const row=document.createElement('div');row.className='mc';
+    if(id)row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info"><span class="lb">信心</span><div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
+    else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><span class="lb">信心</span><div class="vl">'+m.confidence+'%</div></div></div>';
+    // Add time display
+    const timeEl=row.querySelector('.mc-info');
+    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.match_time||m.date)+'</span><div class="vl">'+m.confidence+'%</div>';
+    row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
+    ml.appendChild(row);
+    // Auto-select this match
+    st.picks.add(m.id);
     const ck=row.querySelector('.ck');
-    ck.onclick=e=>{e.stopPropagation();ck.classList.toggle('on');ck.textContent=ck.classList.contains('on')?'✓':'';if(ck.classList.contains('on'))st.picks.add(m.id);else st.picks.delete(m.id);up()};
-    row.onclick=()=>ck.click();ml.appendChild(row);st.picks.add(m.id)});up();}
+    ck.classList.add('on');ck.textContent='✓';row.classList.add('sel');
+  });up();}
 function up(){
   const n=st.picks.size;document.getElementById('sc').textContent=n;document.getElementById('gb').disabled=n<2;
   const tag=document.getElementById('comboTag');
   if(n<2)tag.textContent='—';else tag.textContent=(n==2?'2串1':n+'串1')}
+
+// Global toggle function
+function togCK(el,id){
+  el.classList.toggle('on');el.textContent=el.classList.contains('on')?'✓':'';
+  const card=el.closest('.mc');
+  if(el.classList.contains('on')){st.picks.add(id);card.classList.add('sel')}
+  else{st.picks.delete(id);card.classList.remove('sel')}
+  up();}
 
 // ===== Animation =====
 function startAnim(){
@@ -244,62 +285,94 @@ function startAnim(){
 
 function showResult(n,el){
   const parlay=n==2?'2串1':n+'串1';
-  // Generate simulated combo results
-  const picks=[...st.picks].slice(0,n);
-  const matched=st.matches.filter(m=>picks.includes(m.id)).slice(0,n);
-  
-  let html='<div class="ar-title">🎯 '+parlay+' 组合分析</div>';
-  
-  // Top combo
-  const hitRate=(85+Math.floor(Math.random()*12)).toFixed(1);
-  const fairOdds=(1/(hitRate/100)).toFixed(2);
-  html+=`<div class="ar-card"><div class="ar-row"><span>🏆 最佳组合</span><span class="hit">命中率 ${hitRate}%</span></div><div class="ar-row"><span>公平赔率</span><span class="v">${fairOdds}x</span></div><div class="ar-row"><span>场次</span><span class="v">${n}场 ${parlay}</span></div></div>`;
-  
-  // Matches in combo
-  matched.forEach(m=>{
-    const name=(m.home_cn||m.home)+' vs '+(m.away_cn||m.away);
-    html+=`<div class="ar-card" style="padding:8px 14px;font-size:10px"><div class="ar-row" style="padding:4px 0"><span>${name}</span><span class="${m.prediction==='主胜'?'v':'hit'}">${m.prediction}</span></div></div>`;
+  // Fetch real combo data from API
+  const ids=[...st.picks].join(',');
+  el.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0">加载组合分析...</div>';
+  fetch('/api/generate-combos?type='+n+'&ids='+ids).then(r=>r.json()).then(data=>{
+    const combos=data.top_combos||[];
+    let html='<div class="ar-title">🎯 '+parlay+' 组合分析</div>';
+    if(combos.length===0){
+      html+='<div class="ar-card" style="text-align:center;color:#8b7fa0;font-size:12px">暂无有效组合</div>';
+    } else {
+      combos.slice(0,5).forEach((c,i)=>{
+        html+='<div class="ar-card"><div class="ar-row"><span>#'+(i+1)+' 组合</span><span class="hit">命中率 '+(c.hit_pct||'—')+'%</span></div>'+
+          (c.fair_odds?'<div class="ar-row"><span>公平赔率</span><span class="v">'+c.fair_odds+'x</span></div>':'')+
+          '<div class="ar-row"><span>场次</span><span class="v">'+parlay+'</span></div>';
+        (c.matches||[]).forEach(m=>{
+          html+='<div class="ar-row" style="padding:4px 0;font-size:10px"><span>'+(m.home||'')+' vs '+(m.away||'')+'</span><span class="'+(m.prediction==='主胜'?'v':'hit')+'">'+(m.prediction||'')+'</span></div>';
+        });
+        html+='</div>';
+      });
+    }
+    html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">📤 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+    el.innerHTML=html;
+  }).catch(()=>{
+    el.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px">加载失败，请重试</div><div class="ar-actions"><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
   });
-
-  html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">📤 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
-  el.innerHTML=html;
 }
 
 function saveResult(){
   const el=document.getElementById('animResult');
-  // Use html2canvas-like approach: build canvas from result content
-  const resultHTML=el.innerHTML;
-  const win=window.open('','_blank');
-  if(win){
-    win.document.write('<html><head><style>body{background:#0d0f14;color:#e8e4f0;font-family:sans-serif;padding:20px;max-width:400px;margin:0 auto}');
-    win.document.write('.ar-card{background:linear-gradient(135deg,#161122,#1a1428);border:1px solid #2a2040;border-radius:12px;padding:14px;margin-bottom:6px}');
-    win.document.write('.ar-title{font-size:13px;font-weight:600;color:#c8b8e8;margin-bottom:10px;text-align:center}');
-    win.document.write('.ar-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #2a2040;font-size:11px;color:#8b7fa0}');
-    win.document.write('.ar-row .v{color:#a080d8;font-weight:600}.ar-row .hit{color:#3fb950}');
-    win.document.write('.header{text-align:center;margin-bottom:16px}.header h2{color:#c8b8e8;font-size:16px}.header .sub{color:#6a5a80;font-size:10px;margin-top:4px}');
-    win.document.write('</style></head><body>');
-    win.document.write('<div class="header"><h2>⚽ K38 智荐</h2><div class="sub">AI 足球推荐 · '+document.getElementById('comboTag').textContent+'</div></div>');
-    // Extract cards from result
-    const cards=el.querySelectorAll('.ar-card');
-    cards.forEach(c=>win.document.write(c.outerHTML));
-    win.document.write('<div style="text-align:center;margin-top:16px;color:#6a5a80;font-size:9px">由 K38 AI 生成 · tip.k38.ai</div>');
-    win.document.write('</body></html>');
-    win.document.close();
-    win.focus();
-    // Try to print/save
-    setTimeout(()=>{
-      win.print();
-      showToast('✅ 已发送到打印机，可保存为PDF或截图');
-    },500);
-  } else {
-    // Fallback: copy to clipboard
-    const text=el.textContent.replace(/\s+/g,' ').trim();
-    navigator.clipboard.writeText('⚽ K38 智荐\n'+text+'\n— 由 K38 AI 生成').then(()=>{
-      showToast('✅ 已复制到剪贴板');
-    }).catch(()=>{
-      showToast('⚠️ 请手动截图保存');
+  // Build a canvas from the result content
+  const cards=el.querySelectorAll('.ar-card');
+  const title=el.querySelector('.ar-title');
+  const lines=[];
+  lines.push('⚽ K38 智荐 — '+document.getElementById('comboTag').textContent);
+  lines.push('');
+  if(title)lines.push(title.textContent.replace(/^\S+\s/,''));
+  cards.forEach(c=>{
+    const rows=c.querySelectorAll('.ar-row');
+    rows.forEach(r=>{
+      const spans=r.querySelectorAll('span');
+      const txt=Array.from(spans).map(s=>s.textContent).join(' ');
+      if(txt.trim())lines.push(txt);
     });
-  }
+  });
+  lines.push('');
+  lines.push('— 由 K38 AI 生成 · tip.k38.ai');
+  
+  // Create a text-based share image using canvas
+  const canvas=document.createElement('canvas');
+  const ctx=canvas.getContext('2d');
+  const lineH=20;const pad=30;const w=400;
+  const h=pad*2+lines.length*lineH+20;
+  canvas.width=w;canvas.height=h;
+  
+  // Background
+  ctx.fillStyle='#0d0f14';ctx.fillRect(0,0,w,h);
+  // Accent line
+  ctx.fillStyle='#7c5cbf';ctx.fillRect(0,0,w,3);
+  
+  ctx.font='13px -apple-system,sans-serif';ctx.fillStyle='#c8b8e8';
+  ctx.fillText('⚽ K38 智荐 — '+document.getElementById('comboTag').textContent,pad,pad+15);
+  
+  ctx.font='11px -apple-system,sans-serif';
+  let y=pad+40;
+  cards.forEach(c=>{
+    const rows=c.querySelectorAll('.ar-row');
+    rows.forEach(r=>{
+      const spans=r.querySelectorAll('span');
+      const parts=Array.from(spans).map(s=>({text:s.textContent,color:window.getComputedStyle(s).color||'#8b7fa0'}));
+      let x=pad;
+      parts.forEach(p=>{
+        ctx.fillStyle=p.color;
+        ctx.fillText(p.text,x,y);
+        x+=ctx.measureText(p.text+' ').width;
+      });
+      y+=lineH;
+    });
+    y+=4;
+  });
+  
+  ctx.fillStyle='#6a5a80';ctx.font='9px -apple-system,sans-serif';
+  ctx.fillText('— 由 K38 AI 生成 · tip.k38.ai',pad,y+8);
+  
+  // Download as PNG
+  const link=document.createElement('a');
+  link.download='K38-智荐-'+Date.now()+'.png';
+  link.href=canvas.toDataURL();
+  link.click();
+  showToast('✅ 已保存到下载文件夹');
 }
 
 function shareResult(){
@@ -327,6 +400,11 @@ function showToast(msg){
 }
 
 function closeAnim(){
+  // Clean up animation elements
+  document.getElementById('animBalls').innerHTML='';
+  document.getElementById('checkRing').style.display='none';
+  document.getElementById('animResult').innerHTML='';
+  document.getElementById('animResult').classList.remove('s');
   document.getElementById('animOverlay').classList.remove('s');
 }
 
