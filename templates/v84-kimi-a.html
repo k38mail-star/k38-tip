@@ -38,8 +38,9 @@
     pointer-events:none;opacity:.5}
   
   .app-wrap{position:relative;z-index:0}
-  h1{font-size:18px;font-weight:700;margin-bottom:20px;color:#c8b8e8;letter-spacing:-.3px;text-align:center}
+  h1{font-size:18px;font-weight:700;margin-bottom:2px;color:#c8b8e8;letter-spacing:-.3px;text-align:center}
   h1 span{color:#7c5cbf}
+  .subtitle{font-size:10px;color:#6a5a80;text-align:center;margin-bottom:20px;letter-spacing:.3px}
   .tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;z-index:10;background:#0d0f14;padding:8px 0}
   .tag{padding:5px 10px;border-radius:8px;border:1px solid #2a2040;font-size:11px;cursor:pointer;color:#8b7fa0;transition:.15s;user-select:none;background:linear-gradient(135deg,#161122,#1a1428)}
   .tag:hover{border-color:#5c4090;color:#c8b8e8}
@@ -94,10 +95,13 @@
   .fb:disabled{opacity:.2;box-shadow:none;cursor:default}
   .fb:active:not(:disabled){transform:scale(.9)}
   .fb-label{font-size:10px;font-weight:700;margin-top:-2px;display:block}
+  .fb-hint{font-size:8px;color:#6a5a80;text-align:center;margin-top:4px}
 
   /* ===== Animation Overlay ===== */
   .anim-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,15,20,.92);z-index:200;backdrop-filter:blur(4px);justify-content:center;align-items:center;flex-direction:column}
   .anim-overlay.s{display:flex}
+  .anim-skip{position:absolute;top:50px;right:20px;font-size:10px;color:#6a5a80;cursor:pointer;padding:6px 12px;border:1px solid #2a2040;border-radius:6px}
+  .anim-skip:hover{color:#a080d8;border-color:#5c4090}
 
   /* Football row */
   .anim-balls{display:flex;align-items:center;justify-content:center;gap:12px;position:relative;padding:20px 0}
@@ -142,6 +146,7 @@
 </head>
 <body>
 <h1>⚽ <span>今天买什么？</span></h1>
+<div class="subtitle">AI 预测每场比赛胜负 · 选几场串一注</div>
 <div class="tags" id="tags"></div>
 <div class="dates" id="dates"></div>
 <div class="ld" id="ld">加载中</div>
@@ -157,14 +162,16 @@
     <div class="fb-wrap">
       <button class="fb" id="gb" disabled>
         <span>⚽</span>
-        <span class="fb-label">串关</span>
+        <span class="fb-label">智能组合</span>
       </button>
+      <div class="fb-hint" id="fbHint">选 2 场以上生成组合</div>
     </div>
   </div>
 </div>
 
 <!-- Animation Overlay -->
 <div class="anim-overlay" id="animOverlay">
+  <div class="anim-skip" onclick="skipAndClose()">跳过 ▶</div>
   <div class="anim-balls" id="animBalls"></div>
   <div class="check-ring" id="checkRing">
     <svg><circle cx="28" cy="28" r="25"/></svg>
@@ -275,8 +282,7 @@ function init(){
       const allBtn=document.createElement('span');allBtn.className='tag'+(allSel?' sel':'');
       allBtn.textContent=allSel?'✓ 全选':'全选';
       allBtn.onclick=()=>{
-        if(st.leagues.size===ALL_LEAGUES.length)st.leagues.clear();
-        else ALL_LEAGUES.forEach(l=>st.leagues.add(l.k));
+        ALL_LEAGUES.forEach(l=>st.leagues.add(l.k));
         savePrefs();renderTags();debounceLoad();
       };
       tg.appendChild(allBtn);
@@ -342,6 +348,23 @@ function render(){
   if(!st.matches.length){ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
   ml.classList.add('s');lg.classList.add('s');bb.classList.add('s');
   
+  // Pagination: show 15 initially
+  let _pageSize=15;
+  let _shown=0;
+  
+  function showMore(){
+    const items=ml.querySelectorAll('.mc');
+    for(let i=_shown;i<_shown+_pageSize&&i<st.matches.length;i++){
+      if(items[i])items[i].style.display='';
+    }
+    _shown=Math.min(_shown+_pageSize,st.matches.length);
+    const moreBtn=ml.querySelector('.more-btn');
+    if(moreBtn){
+      if(_shown>=st.matches.length)moreBtn.style.display='none';
+      else moreBtn.textContent='显示更多 ('+(st.matches.length-_shown)+'场)';
+    }
+  }
+  
   // Deduplicate by fixture_id (keep first occurrence)
   const seen=new Set();
   st.matches=st.matches.filter(m=>{const key=m.id;if(seen.has(key))return false;seen.add(key);return true});
@@ -350,8 +373,8 @@ function render(){
   function getLightning(conf){
     if(conf>=90)return '<span style="color:#ffd700">⚡⚡⚡</span>';
     if(conf>=80)return '<span style="color:#ffd700">⚡⚡</span>';
-    if(conf>=60)return '<span style="color:#d4a060">⚡</span>';
-    return '<span style="color:#3c3050">⚡</span>';
+    if(conf>=60)return '<span style="color:#ffd700">⚡</span>';
+    return '';
   }
   
   // Check if match is hot (involves popular teams)
@@ -406,18 +429,34 @@ function render(){
     else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div>';
     // Add time display
     const timeEl=row.querySelector('.mc-info');
-    if(timeEl)timeEl.innerHTML='<span class="lb">'+(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span></div>';
+    if(timeEl)timeEl.innerHTML='<span class="lb">'+(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span><span class="lb" style="font-size:7px;display:block;margin-top:0">胜率</span></div>';
     row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
     ml.appendChild(row);
     // Auto-select this match
     st.picks.add(m.id);
     const ck=row.querySelector('.ck');
     ck.classList.add('on');ck.textContent='✓';row.classList.add('sel');
-  });up();}
+  });up();
+  
+  // Apply pagination
+  const allCards=ml.querySelectorAll('.mc');
+  allCards.forEach((c,i)=>{if(i>=_pageSize)c.style.display='none'});
+  _shown=Math.min(_pageSize,allCards.length);
+  if(allCards.length>_pageSize){
+    const moreDiv=document.createElement('div');
+    moreDiv.className='more-btn';
+    moreDiv.style.cssText='text-align:center;padding:12px;font-size:11px;color:#8b7fa0;cursor:pointer;border:1px solid #2a2040;border-radius:8px;margin-top:4px';
+    moreDiv.textContent='显示更多 ('+(st.matches.length-_pageSize)+'场)';
+    moreDiv.onclick=showMore;
+    ml.appendChild(moreDiv);
+  }
+}
 function up(){
   const n=st.picks.size;document.getElementById('sc').textContent=n;document.getElementById('gb').disabled=n<2;
   const tag=document.getElementById('comboTag');
-  if(n<2)tag.textContent='—';else tag.textContent=(n==2?'2串1':n+'串1')}
+  const hint=document.getElementById('fbHint');
+  if(n<2){tag.textContent='—';if(hint)hint.textContent='选 2 场以上生成组合'}
+  else{tag.textContent=(n==2?'2串1':n+'串1');if(hint)hint.textContent='选'+n+'场 · 已就绪 ✓'}}
 
 // Global toggle function
 function togCK(el,id){
