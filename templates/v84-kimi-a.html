@@ -146,7 +146,7 @@
 </style>
 </head>
 <body>
-<h1>⚽ <span style="font-size:28px">波波机</span></h1>
+<h1>⚽ <span style="font-size:32px">波波机</span></h1>
 <div class="subtitle" style="font-size:11px;color:#a080d8;font-weight:500">看球必备 · 两元壹串波波鸡 🐔</div>
 <div style="text-align:center;font-size:9px;color:#6a5a80;margin-bottom:12px;line-height:1.5">
 两元壹串！不管是二串一、三串一、四串一、还是五串一，都是两元壹串的波波鸡 🐔
@@ -317,8 +317,7 @@ let _animTimer=null;
 function skipAndClose(){
   clearTimeout(_animTimer);
   closeAnim();
-  // If there was a pending result, show it now quickly
-  const n=st.picks.size;
+  const n=Math.min(st.picks.size,6);
   if(n>=2){
     const result=document.getElementById('animResult');
     result.classList.add('s');
@@ -457,11 +456,12 @@ function render(){
   }
 }
 function up(){
-  const n=st.picks.size;document.getElementById('sc').textContent=n;document.getElementById('gb').disabled=n<2;
+  const actual=st.picks.size;const capped=Math.min(actual,6);
+  document.getElementById('sc').textContent=actual;document.getElementById('gb').disabled=actual<2;
   const tag=document.getElementById('comboTag');
   const hint=document.getElementById('fbHint');
-  if(n<2){tag.textContent='—';if(hint)hint.textContent='选 2 场以上生成组合'}
-  else{tag.textContent=(n==2?'2串1':n+'串1');if(hint)hint.textContent='选'+n+'场 · 已就绪 ✓'}}
+  if(actual<2){tag.textContent='—';if(hint)hint.textContent='选 2 场以上生成组合'}
+  else{const maxT=capped==2?'2串1':capped+'串1';tag.textContent=maxT;if(hint)hint.textContent=actual>6?'已选'+actual+'场·取前6串1 ✓':'选'+actual+'场·已就绪 ✓'}}
 
 // Global toggle function
 function togCK(el,id){
@@ -473,7 +473,8 @@ function togCK(el,id){
 
 // ===== Animation =====
 function startAnim(){
-  const n=st.picks.size;
+  const actual=st.picks.size;
+  const n=Math.min(actual,6);
   if(n<2)return;
   const overlay=document.getElementById('animOverlay');
   const balls=document.getElementById('animBalls');
