@@ -18,7 +18,7 @@
   .app-wrap{position:relative;z-index:0}
   h1{font-size:18px;font-weight:700;margin-bottom:20px;color:#c8b8e8;letter-spacing:-.3px;text-align:center}
   h1 span{color:#7c5cbf}
-  .tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px}
+  .tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px;position:sticky;top:0;z-index:10;background:#0d0f14;padding:8px 0}
   .tag{padding:5px 10px;border-radius:8px;border:1px solid #2a2040;font-size:11px;cursor:pointer;color:#8b7fa0;transition:.15s;user-select:none;background:linear-gradient(135deg,#161122,#1a1428)}
   .tag:hover{border-color:#5c4090;color:#c8b8e8}
   .tag.sel{border-color:#7c5cbf;color:#c8b8e8;background:linear-gradient(135deg,#1e1440,#241850);box-shadow:0 0 12px rgba(124,92,191,.15)}
@@ -168,16 +168,53 @@ function loadPrefs(){
 function savePrefs(){
   try{localStorage.setItem('k38_leagues',JSON.stringify([...st.leagues]))}catch(e){}
 }
+// Debounce for league switching
+let _debounceTimer=null;
+function debounceLoad(){
+  clearTimeout(_debounceTimer);
+  _debounceTimer=setTimeout(()=>{
+    const sel=document.querySelector('.date.sel');
+    if(sel)sel.click();
+  },300);
+}
+
+// Format date labels
+function fmtDateLabel(days){
+  const d=new Date();d.setDate(d.getDate()+days);
+  return (d.getMonth()+1)+'月'+d.getDate()+'日';
+}
+
 function init(){
   loadPrefs();
   const tg=document.getElementById('tags');
   LG.forEach((l,i)=>{const e=document.createElement('span');e.className='tag'+(st.leagues.has(l.k)?' sel':'');e.innerHTML=l.f+'&nbsp;'+l.l;
-    e.onclick=()=>{e.classList.toggle('sel');if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')};savePrefs();const sel=document.querySelector('.date.sel');if(sel)sel.click()};tg.appendChild(e)});
-  [{l:'今天',d:0},{l:'3天',d:2},{l:'5天',d:4},{l:'7天',d:6}].forEach(r=>{const e=document.createElement('div');e.className='date';e.innerHTML=r.l+'<span class="cnt"></span>';
+    e.onclick=()=>{e.classList.toggle('sel');if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')};savePrefs();debounceLoad()};tg.appendChild(e)});
+  // 全选按钮
+  const allBtn=document.createElement('span');allBtn.className='tag';allBtn.textContent='✓ 全选';
+  allBtn.onclick=()=>{const allSel=!allBtn.classList.contains('sel');LG.forEach(l=>{if(allSel)st.leagues.add(l.k);else st.leagues.clear()});document.querySelectorAll('.tag').forEach(t=>t.classList.toggle('sel',allSel));allBtn.classList.toggle('sel');allBtn.textContent=allSel?'✓ 全选':'全选';savePrefs();debounceLoad()};
+  tg.appendChild(allBtn);
+  // 全选初始状态
+  if(st.leagues.size===LG.length){allBtn.classList.add('sel');allBtn.textContent='✓ 全选'}
+  [{l:'今天',d:0},{l:'3天',d:2},{l:'5天',d:4},{l:'7天',d:6}].forEach(r=>{const e=document.createElement('div');e.className='date';e.innerHTML=r.l+'<span class="cnt" style="font-size:8px;color:#6a5a80">'+fmtDateLabel(r.d)+'</span>';
     e.onclick=()=>{document.querySelectorAll('.date').forEach(b=>b.classList.remove('sel'));e.classList.add('sel');load(r)};document.getElementById('dates').appendChild(e)});
   document.querySelector('.date').click();
   document.getElementById('gb').onclick=startAnim;
-  document.getElementById('animOverlay').onclick=function(e){if(e.target===this)closeAnim()};
+  document.getElementById('animOverlay').onclick=function(e){if(e.target===this){skipAndClose()}};
+  document.getElementById('animOverlay').addEventListener('dblclick',function(e){e.stopPropagation();skipAndClose()});
+}
+
+let _animTimer=null;
+function skipAndClose(){
+  clearTimeout(_animTimer);
+  closeAnim();
+  // If there was a pending result, show it now quickly
+  const n=st.picks.size;
+  if(n>=2){
+    const result=document.getElementById('animResult');
+    result.classList.add('s');
+    showResult(n,result);
+    result.style.animation='resultSlide .2s ease forwards';
+  }
 }
 function load(r){
   const ld=document.getElementById('ld'),ml=document.getElementById('ml'),lg=document.getElementById('legend'),bb=document.getElementById('bb');
@@ -296,7 +333,7 @@ function startAnim(){
 
   // After balls + skewer, do ring check
   const totalDelay=(n*.12+.7)*1000;
-  setTimeout(()=>{
+  _animTimer=setTimeout(()=>{
     ring.style.display='flex';
     const circ=ring.querySelector('circle');
     const mark=ring.querySelector('.ck-mark');
