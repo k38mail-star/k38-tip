@@ -31,7 +31,7 @@ def get_odds_for_fixture(home_team: str, away_team: str, sport_key: str = "socce
             f"&markets=h2h&oddsFormat=decimal"
         )
         req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=2) as resp:
             data = json.loads(resp.read().decode())
 
         if not isinstance(data, list):
