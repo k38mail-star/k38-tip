@@ -77,29 +77,27 @@
 
 <script>
 const LEAGUES = [
+  {k:'wc', id:1, l:'世界杯', f:'🌍'},
   {k:'epl', id:39, l:'英超', f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
   {k:'la', id:140, l:'西甲', f:'🇪🇸'},
   {k:'sa', id:135, l:'意甲', f:'🇮🇹'},
   {k:'bl', id:78, l:'德甲', f:'🇩🇪'},
   {k:'l1', id:61, l:'法甲', f:'🇫🇷'},
-  {k:'wc', id:1, l:'世界杯', f:'🌍'},
 ];
 
 let st = { leagues: new Set(), picks: new Set(), matches: [] };
 
 function init() {
-  // Leagues
+  // Leagues - default: 世界杯 only
   const lg = document.getElementById('lg');
-  LEAGUES.forEach(l => {
+  LEAGUES.forEach((l, i) => {
     const el = document.createElement('span');
-    el.className = 'lg-p sel';
-    el.textContent = l.f + ' ' + l.l;
+    el.className = 'lg-p' + (i === 0 ? ' sel' : '');
+    el.textContent = l.f + ' ' + l.l + (i === 0 ? ' ✓' : '');
     el.onclick = () => tgLg(l.k);
     lg.appendChild(el);
-    st.leagues.add(l.k);
+    if (i === 0) st.leagues.add(l.k);
   });
-  // Select all indicator
-  document.querySelector('.lg-p:last-child').textContent += ' ✓';
 
   // Dates
   const dt = document.getElementById('dt');
@@ -120,48 +118,24 @@ function init() {
 
 function tgLg(k) {
   const el = document.querySelectorAll('.lg-p');
-  const all = el[el.length-1];
   const thisEl = [...el].find(e => e.textContent.includes(LEAGUES.find(l=>l.k===k)?.l));
   if (!thisEl) return;
-
-  if (k === 'wc') { // "all" is the last one - toggle all
-    const allSel = !all.classList.contains('sel');
-    st.leagues.clear();
-    el.forEach(e => { 
-      e.classList.toggle('sel', allSel);
-      const txt = e.textContent.replace(' ✓','');
-      e.textContent = txt;
-    });
-    if (allSel) {
-      LEAGUES.forEach(l => st.leagues.add(l.k));
-      all.textContent += ' ✓';
-    }
-    return;
-  }
 
   thisEl.classList.toggle('sel');
   const txt = thisEl.textContent.replace(' ✓','');
   if(thisEl.classList.contains('sel')) {
     st.leagues.add(k);
-    thisEl.textContent = txt;
+    thisEl.textContent = txt + ' ✓';
   } else {
     st.leagues.delete(k);
     thisEl.textContent = txt;
   }
 
-  // Update all indicator
-  if (st.leagues.size === LEAGUES.length) {
-    all.classList.add('sel');
-    all.textContent = all.textContent.replace(' ✓','') + ' ✓';
-  } else {
-    all.classList.remove('sel');
-    all.textContent = all.textContent.replace(' ✓','');
-  }
-
+  // Always keep at least one league selected
   if (st.leagues.size === 0) {
     st.leagues.add('wc');
-    document.querySelectorAll('.lg-p')[LEAGUES.length-1].classList.add('sel');
-    document.querySelectorAll('.lg-p')[LEAGUES.length-1].textContent += ' ✓';
+    el[0].classList.add('sel');
+    el[0].textContent = el[0].textContent.replace(' ✓','') + ' ✓';
   }
 }
 

@@ -63,24 +63,24 @@
 
 <script>
 const LG=[
+  {k:'wc',id:1,l:'世界杯',f:'🌍'},
   {k:'epl',id:39,l:'英超',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
   {k:'la',id:140,l:'西甲',f:'🇪🇸'},
   {k:'sa',id:135,l:'意甲',f:'🇮🇹'},
   {k:'bl',id:78,l:'德甲',f:'🇩🇪'},
   {k:'l1',id:61,l:'法甲',f:'🇫🇷'},
-  {k:'wc',id:1,l:'世界杯',f:'🌍'},
 ];
-const st={leagues:new Set(LG.map(l=>l.k)),picks:new Set(),matches:[]};
+const st={leagues:new Set(['wc']),picks:new Set(),matches:[]};
 
 function init(){
   const tg=document.getElementById('tags');
-  LG.forEach(l=>{
-    const e=document.createElement('span');e.className='tag sel';
+  LG.forEach((l,i)=>{
+    const e=document.createElement('span');e.className='tag'+(i===0?' sel':'');
     e.innerHTML=l.f+'&nbsp;'+l.l;
     e.onclick=()=>{
       e.classList.toggle('sel');
       if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);
-      if(!st.leagues.size){st.leagues.add(l.k);e.classList.add('sel')}
+      if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')}
       const sel=document.querySelector('.date.sel');
       if(sel)sel.click();
     };
