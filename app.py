@@ -14,6 +14,7 @@ DB = "/opt/k38-football/football.db"
 
 _poisson = None
 _monte = None
+_pred_cache = {}  # fixture_id -> prediction data cache
 
 def get_engine():
     global _poisson, _monte
@@ -97,7 +98,13 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
     matches = get_candidate_matches(limit, date_from, date_to, league_ids)
     results = []
     for m in matches:
-        pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
+        fid = m["fixture_id"]
+        if fid in _pred_cache:
+            pred = _pred_cache[fid]
+        else:
+            pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
+            if "error" not in pred:
+                _pred_cache[fid] = pred
         if "error" in pred: continue
         hw = pred["win_prob"]["home"]
         aw = pred["win_prob"]["away"]
@@ -266,7 +273,12 @@ def api_generate_combos():
         combo_details = []
         
         for fid, m in combo:
-            pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
+            if fid in _pred_cache:
+                pred = _pred_cache[fid]
+            else:
+                pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
+                if "error" not in pred:
+                    _pred_cache[fid] = pred
             if "error" in pred: continue
             hw = pred["win_prob"]["home"]
             aw = pred["win_prob"]["away"]
