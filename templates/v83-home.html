@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Codex 推荐 — 竞彩足球</title>
+<style>
+  /* ========== Reset & Base ========== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0d1117;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+      'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .page-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #8b949e;
+    margin-bottom: 32px;
+  }
+
+  /* ========== Card Container ========== */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    max-width: 560px;
+  }
+
+  .card {
+    background: #161b22;
+    border: 1px solid #21262d;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    position: relative;
+  }
+  .card:hover {
+    border-color: #30363d;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  }
+  .card.selected {
+    border-color: #d9a05b;
+    box-shadow: 0 0 0 1px rgba(217,160,91,.35), 0 8px 24px rgba(0,0,0,.4);
+  }
+
+  /* ========== Recommendation Banner ========== */
+  .rec-banner {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px 10px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    gap: 10px;
+    min-height: 40px;
+    user-select: none;
+    transition: background .15s;
+  }
+
+  /* Banner colour variants */
+  .rec-banner--home-win {
+    background: linear-gradient(135deg, #1b3a1f 0%, #16331a 100%);
+    border-bottom: 1px solid #2d6a30;
+  }
+  .rec-banner--away-win {
+    background: linear-gradient(135deg, #1a2a4a 0%, #152542 100%);
+    border-bottom: 1px solid #2a4a7a;
+  }
+  .rec-banner--over {
+    background: linear-gradient(135deg, #3a2e14 0%, #33280f 100%);
+    border-bottom: 1px solid #6a5520;
+  }
+
+  /* Checkbox */
+  .rec-check {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1.5px solid #484f58;
+    background: #0d1117;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all .15s;
+    position: relative;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .rec-check:checked {
+    background: #d9a05b;
+    border-color: #d9a05b;
+  }
+  .rec-check:checked::after {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border: solid #0d1117;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translateY(-1px);
+    position: absolute;
+    top: 2px;
+  }
+  .rec-check:focus-visible {
+    outline: 2px solid #d9a05b;
+    outline-offset: 2px;
+  }
+
+  /* Label + badge row */
+  .rec-label-area {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .rec-icon { font-size: 14px; line-height: 1; }
+  .rec-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #e6edf3;
+    white-space: nowrap;
+  }
+  .rec-text .bet-type {
+    color: #f0e6d3;
+  }
+  .rec-odds {
+    font-size: 12px;
+    font-weight: 500;
+    color: #8b949e;
+    margin-left: 4px;
+  }
+  .rec-edge {
+    font-size: 11px;
+    font-weight: 700;
+    color: #d9a05b;
+    background: rgba(217,160,91,.12);
+    padding: 1px 8px;
+    border-radius: 10px;
+    white-space: nowrap;
+  }
+
+  /* Confidence Badge */
+  .rec-confidence {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .3px;
+    padding: 3px 10px 3px 8px;
+    border-radius: 20px;
+    white-space: nowrap;
+  }
+  .rec-confidence--high {
+    color: #58a6ff;
+    background: rgba(88,166,255,.12);
+    border: 1px solid rgba(88,166,255,.25);
+  }
+  .rec-confidence--mid {
+    color: #d9a05b;
+    background: rgba(217,160,91,.12);
+    border: 1px solid rgba(217,160,91,.25);
+  }
+  .rec-confidence--low {
+    color: #8b949e;
+    background: rgba(139,148,158,.08);
+    border: 1px solid rgba(139,148,158,.18);
+  }
+  .conf-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .rec-confidence--high .conf-dot { background: #58a6ff; }
+  .rec-confidence--mid  .conf-dot { background: #d9a05b; }
+  .rec-confidence--low  .conf-dot { background: #8b949e; }
+
+  /* ========== Match Body ========== */
+  .match-body {
+    padding: 16px 14px 14px;
+  }
+
+  /* Teams row */
+  .teams-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .team {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #c9d1d9;
+    min-width: 0;
+  }
+  .team--home { justify-content: flex-start; }
+  .team--away { justify-content: flex-end; flex-direction: row-reverse; }
+
+  .team-crest {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #21262d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+  .team-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Highlighted team */
+  .team--highlighted .team-name {
+    position: relative;
+    display: inline-block;
+  }
+  .team--highlighted-home .team-name {
+    color: #3fb950;
+    font-weight: 700;
+  }
+  .team--highlighted-away .team-name {
+    color: #58a6ff;
+    font-weight: 700;
+  }
+  .team--highlighted-home .team-crest {
+    background: rgba(63,185,80,.12);
+    border: 1px solid rgba(63,185,80,.3);
+  }
+  .team--highlighted-away .team-crest {
+    background: rgba(88,166,255,.12);
+    border: 1px solid rgba(88,166,255,.3);
+  }
+
+  /* VS divider */
+  .vs-divider {
+    font-size: 12px;
+    font-weight: 600;
+    color: #484f58;
+    flex-shrink: 0;
+    padding: 0 4px;
+  }
+
+  /* Score (for finished matches) */
+  .score-display {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e6edf3;
+    flex-shrink: 0;
+    letter-spacing: 1px;
+    padding: 0 4px;
+  }
+
+  /* Match info row */
+  .match-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #6e7681;
+    padding-top: 12px;
+    border-top: 1px solid #21262d;
+  }
+  .match-info-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .match-league {
+    font-weight: 500;
+    color: #8b949e;
+  }
+  .match-league-icon {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    background: #21262d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+  }
+  .match-time {
+    color: #6e7681;
+  }
+  .match-time::before {
+    content: '·';
+    margin-right: 6px;
+  }
+
+  .match-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .stat-tag {
+    font-size: 11px;
+    font-weight: 500;
+    color: #8b949e;
+    background: #0d1117;
+    padding: 2px 8px;
+    border-radius: 8px;
+    border: 1px solid #21262d;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stat-tag .stat-label {
+    color: #6e7681;
+  }
+  .stat-tag .stat-value {
+    color: #d9a05b;
+    font-weight: 600;
+  }
+
+  /* ========== Section title ========== */
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    color: #484f58;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #21262d;
+  }
+
+  /* ========== Responsive ========== */
+  @media (max-width: 480px) {
+    .rec-text { font-size: 12px; }
+    .rec-odds { font-size: 11px; }
+    .team { font-size: 14px; gap: 8px; }
+    .team-crest { width: 24px; height: 24px; font-size: 13px; }
+    .match-info { flex-wrap: wrap; gap: 6px; }
+    .match-stats { gap: 6px; }
+    .stat-tag { font-size: 10px; padding: 1px 6px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">⚽ 今日推荐 · Codex Edge</div>
+
+<div class="cards">
+
+  <!-- ===== CARD 1 — 主胜 (Home Win) ===== -->
+  <div class="card" data-rec="home-win">
+    <div class="rec-banner rec-banner--home-win">
+      <input type="checkbox" class="rec-check" id="chk1">
+      <div class="rec-label-area">
+        <span class="rec-icon">🏆</span>
+        <span class="rec-text">
+          推荐 <span class="bet-type">主胜</span>
+          <span class="rec-odds">@1.75</span>
+        </span>
+        <span class="rec-edge">+12.4% Edge</span>
+      </div>
+      <div class="rec-confidence rec-confidence--high">
+        <span class="conf-dot"></span>
+        高置信度
+      </div>
+    </div>
+    <div class="match-body">
+      <div class="teams-row">
+        <div class="team team--home team--highlighted team--highlighted-home">
+          <div class="team-crest">🦁</div>
+          <span class="team-name">里昂</span>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="team team--away">
+          <div class="team-crest">🔵</div>
+          <span class="team-name">尼斯</span>
+        </div>
+      </div>
+      <div class="match-info">
+        <div class="match-info-left">
+          <span class="match-league">
+            <span class="match-league-icon">🇫🇷</span>
+            法甲
+          </span>
+          <span class="match-time">今晚 03:00</span>
+        </div>
+        <div class="match-stats">
+          <span class="stat-tag">
+            <span class="stat-label">xG</span>
+            <span class="stat-value">1.84</span>
+          </span>
+          <span class="stat-tag">
+            <span class="stat-label">预期胜率</span>
+            <span class="stat-value">62%</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CARD 2 — 客胜 (Away Win) ===== -->
+  <div class="card" data-rec="away-win">
+    <div class="rec-banner rec-banner--away-win">
+      <input type="checkbox" class="rec-check" id="chk2">
+      <div class="rec-label-area">
+        <span class="rec-icon">🏆</span>
+        <span class="rec-text">
+          推荐 <span class="bet-type">客胜</span>
+          <span class="rec-odds">@2.40</span>
+        </span>
+        <span class="rec-edge">+9.8% Edge</span>
+      </div>
+      <div class="rec-confidence rec-confidence--mid">
+        <span class="conf-dot"></span>
+        中等置信度
+      </div>
+    </div>
+    <div class="match-body">
+      <div class="teams-row">
+        <div class="team team--home">
+          <div class="team-crest">⚫</div>
+          <span class="team-name">AC米兰</span>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="team team--away team--highlighted team--highlighted-away">
+          <div class="team-crest">🐺</div>
+          <span class="team-name">罗马</span>
+        </div>
+      </div>
+      <div class="match-info">
+        <div class="match-info-left">
+          <span class="match-league">
+            <span class="match-league-icon">🇮🇹</span>
+            意甲
+          </span>
+          <span class="match-time">明晨 02:45</span>
+        </div>
+        <div class="match-stats">
+          <span class="stat-tag">
+            <span class="stat-label">xG</span>
+            <span class="stat-value">2.12</span>
+          </span>
+          <span class="stat-tag">
+            <span class="stat-label">预期胜率</span>
+            <span class="stat-value">55%</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CARD 3 — 大2.5 (Over 2.5 Goals) ===== -->
+  <div class="card" data-rec="over">
+    <div class="rec-banner rec-banner--over">
+      <input type="checkbox" class="rec-check" id="chk3">
+      <div class="rec-label-area">
+        <span class="rec-icon">🏆</span>
+        <span class="rec-text">
+          推荐 <span class="bet-type">大2.5</span>
+          <span class="rec-odds">@1.90</span>
+        </span>
+        <span class="rec-edge">+11.2% Edge</span>
+      </div>
+      <div class="rec-confidence rec-confidence--high">
+        <span class="conf-dot"></span>
+        高置信度
+      </div>
+    </div>
+    <div class="match-body">
+      <div class="teams-row">
+        <div class="team team--home">
+          <div class="team-crest">🔴</div>
+          <span class="team-name">利物浦</span>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="team team--away">
+          <div class="team-crest">🔵</div>
+          <span class="team-name">切尔西</span>
+        </div>
+      </div>
+      <div class="match-info">
+        <div class="match-info-left">
+          <span class="match-league">
+            <span class="match-league-icon">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>
+            英超
+          </span>
+          <span class="match-time">周六 22:00</span>
+        </div>
+        <div class="match-stats">
+          <span class="stat-tag">
+            <span class="stat-label">xG</span>
+            <span class="stat-value">3.21</span>
+          </span>
+          <span class="stat-tag">
+            <span class="stat-label">历史交锋</span>
+            <span class="stat-value">场均 3.4球</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CARD 4 — 主胜 (variation, selected state demo) ===== -->
+  <div class="card selected" data-rec="home-win">
+    <div class="rec-banner rec-banner--home-win">
+      <input type="checkbox" class="rec-check" id="chk4" checked>
+      <div class="rec-label-area">
+        <span class="rec-icon">🏆</span>
+        <span class="rec-text">
+          推荐 <span class="bet-type">主胜</span>
+          <span class="rec-odds">@2.10</span>
+        </span>
+        <span class="rec-edge">+8.6% Edge</span>
+      </div>
+      <div class="rec-confidence rec-confidence--mid">
+        <span class="conf-dot"></span>
+        中等置信度
+      </div>
+    </div>
+    <div class="match-body">
+      <div class="teams-row">
+        <div class="team team--home team--highlighted team--highlighted-home">
+          <div class="team-crest">🐉</div>
+          <span class="team-name">上海海港</span>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="team team--away">
+          <div class="team-crest">🦅</div>
+          <span class="team-name">山东泰山</span>
+        </div>
+      </div>
+      <div class="match-info">
+        <div class="match-info-left">
+          <span class="match-league">
+            <span class="match-league-icon">🇨🇳</span>
+            中超
+          </span>
+          <span class="match-time">明日 19:35</span>
+        </div>
+        <div class="match-stats">
+          <span class="stat-tag">
+            <span class="stat-label">xG</span>
+            <span class="stat-value">1.96</span>
+          </span>
+          <span class="stat-tag">
+            <span class="stat-label">预期胜率</span>
+            <span class="stat-value">58%</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== CARD 5 — 大2.5 (low confidence) ===== -->
+  <div class="card" data-rec="over">
+    <div class="rec-banner rec-banner--over">
+      <input type="checkbox" class="rec-check" id="chk5">
+      <div class="rec-label-area">
+        <span class="rec-icon">🏆</span>
+        <span class="rec-text">
+          推荐 <span class="bet-type">大2.5</span>
+          <span class="rec-odds">@2.25</span>
+        </span>
+        <span class="rec-edge">+6.1% Edge</span>
+      </div>
+      <div class="rec-confidence rec-confidence--low">
+        <span class="conf-dot"></span>
+        低置信度
+      </div>
+    </div>
+    <div class="match-body">
+      <div class="teams-row">
+        <div class="team team--home">
+          <div class="team-crest">🟡</div>
+          <span class="team-name">多特蒙德</span>
+        </div>
+        <div class="vs-divider">VS</div>
+        <div class="team team--away">
+          <div class="team-crest">⚪</div>
+          <span class="team-name">勒沃库森</span>
+        </div>
+      </div>
+      <div class="match-info">
+        <div class="match-info-left">
+          <span class="match-league">
+            <span class="match-league-icon">🇩🇪</span>
+            德甲
+          </span>
+          <span class="match-time">周日 01:30</span>
+        </div>
+        <div class="match-stats">
+          <span class="stat-tag">
+            <span class="stat-label">xG</span>
+            <span class="stat-value">2.68</span>
+          </span>
+          <span class="stat-tag">
+            <span class="stat-label">历史交锋</span>
+            <span class="stat-value">场均 2.7球</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function() {
+    // Sync checkbox ↔ card selected state
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+      const check = card.querySelector('.rec-check');
+      if (!check) return;
+      // Initial sync
+      if (check.checked) card.classList.add('selected');
+      check.addEventListener('change', () => {
+        card.classList.toggle('selected', check.checked);
+      });
+    });
+
+    // Log selections on change (for demo purposes)
+    document.addEventListener('change', e => {
+      if (e.target.classList.contains('rec-check')) {
+        const card = e.target.closest('.card');
+        const recType = card.dataset.rec || 'unknown';
+        const matchEl = card.querySelector('.team-name');
+        const match = matchEl ? matchEl.textContent : 'unknown';
+        console.log(
+          `[Codex] ${e.target.checked ? '✅ 选定' : '⬜ 取消'} ` +
+          `${match} · 推荐: ${recType}`
+        );
+      }
+    });
+
+    console.log('[Codex] 推荐卡片已加载 · 共 ' + cards.length + ' 场推荐');
+  })();
+</script>
+
+</body>
+</html>

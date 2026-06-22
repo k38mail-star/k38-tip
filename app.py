@@ -28,7 +28,7 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-def get_candidate_matches(limit=30, date_from=None, date_to=None):
+def get_candidate_matches(limit=30, date_from=None, date_to=None, league_ids=None):
     conn = get_db()
     where = ["status IN ('Not Started', 'NS')"]
     params = []
@@ -38,6 +38,10 @@ def get_candidate_matches(limit=30, date_from=None, date_to=None):
     if date_to:
         where.append("match_date <= ?")
         params.append(date_to)
+    if league_ids:
+        placeholders = ",".join("?" for _ in league_ids)
+        where.append(f"league_id IN ({placeholders})")
+        params.extend(league_ids)
     where_sql = " AND ".join(where)
     params.append(limit)
     rows = conn.execute(f"""
@@ -88,10 +92,10 @@ def version(vid):
         return render_template(tmpl+".html")
     return "版本不存在", 404
 
-def build_candidate_results(limit=30, date_from=None, date_to=None):
+def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=None):
     """生成候选比赛数据（含预测），供 API 和模板共用"""
     poisson, _ = get_engine()
-    matches = get_candidate_matches(limit, date_from, date_to)
+    matches = get_candidate_matches(limit, date_from, date_to, league_ids)
     results = []
     for m in matches:
         pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
@@ -165,7 +169,9 @@ def api_candidates():
     """返回候选比赛列表（带预测）JSON"""
     date_from = request.args.get("date_from")
     date_to = request.args.get("date_to")
-    results = build_candidate_results(30, date_from, date_to)
+    leagues = request.args.get("leagues")
+    league_ids = [int(x) for x in leagues.split(",") if x.strip().isdigit()] if leagues else None
+    results = build_candidate_results(30, date_from, date_to, league_ids)
     return jsonify({"matches": results, "total": len(results)})
 
 @app.route("/v83")
@@ -173,6 +179,11 @@ def api_candidates():
 def v83():
     matches = build_candidate_results(30)
     return render_template("v83.html", matches=matches)
+
+@app.route("/v84")
+@app.route("/v84/")
+def v84():
+    return render_template("v84.html")
 
 @app.route("/api/generate-combos")
 def api_generate_combos():
