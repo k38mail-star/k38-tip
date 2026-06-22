@@ -1,5 +1,6 @@
 """K38 Tip - Football Betting Recommendation Engine (Updated Flow)"""
 import json, sqlite3, math, itertools
+from contextlib import contextmanager
 from odds_service import get_odds_for_fixture, calculate_ev
 from flask import Flask, render_template, jsonify, request
 from engine.poisson import PoissonModel
@@ -26,6 +27,7 @@ _poisson = None
 _monte = None
 _pred_cache = {}  # fixture_id -> prediction data cache
 _odds_cache = {}  # (home, away, sport) -> odds data cache
+_odds_failed = False  # Circuit breaker: if odds API fails once, skip all
 _MAX_CACHE = 500
 
 def cache_pred(fid, pred):
@@ -44,46 +46,48 @@ def get_engine():
         _monte = MonteCarlo(_poisson)
     return _poisson, _monte
 
+@contextmanager
 def get_db():
     conn = sqlite3.connect(DB, timeout=5)
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 def get_candidate_matches(limit=100, date_from=None, date_to=None, league_ids=None):
-    conn = get_db()
-    where = ["status IN ('Not Started', 'NS')", "match_date >= '2026-01-01'"]
-    params = []
-    if date_from:
-        where.append("DATE(match_date) >= ?")
-        params.append(date_from)
-    if date_to:
-        where.append("DATE(match_date) <= ?")
-        params.append(date_to)
-    if league_ids:
-        placeholders = ",".join("?" for _ in league_ids)
-        where.append(f"league_id IN ({placeholders})")
-        params.extend(league_ids)
-    where_sql = " AND ".join(where)
-    rows = conn.execute(f"""
-        SELECT DISTINCT fixture_id, home_team, away_team, home_team_cn, away_team_cn,
-               home_flag, away_flag, match_date, league_name, league_id
-        FROM football_matches
-        WHERE {where_sql}
-        ORDER BY match_date ASC LIMIT 100
-    """, params).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    with get_db() as conn:
+        where = ["status IN ('Not Started', 'NS')", "match_date >= '2026-01-01'"]
+        params = []
+        if date_from:
+            where.append("DATE(match_date) >= ?")
+            params.append(date_from)
+        if date_to:
+            where.append("DATE(match_date) <= ?")
+            params.append(date_to)
+        if league_ids:
+            placeholders = ",".join("?" for _ in league_ids)
+            where.append(f"league_id IN ({placeholders})")
+            params.extend(league_ids)
+        where_sql = " AND ".join(where)
+        rows = conn.execute(f"""
+            SELECT DISTINCT fixture_id, home_team, away_team, home_team_cn, away_team_cn,
+                   home_flag, away_flag, match_date, league_name, league_id
+            FROM football_matches
+            WHERE {where_sql}
+            ORDER BY match_date ASC LIMIT 100
+        """, params).fetchall()
+        return [dict(r) for r in rows]
 
 def get_stats_for_team(team, stat_type, limit=5):
     import json as j
-    conn = get_db()
-    rows = conn.execute("""
-        SELECT events, home_team, away_team
-        FROM football_matches
-        WHERE (home_team=? OR away_team=?) AND events IS NOT NULL AND events!='[]'
-        ORDER BY match_date DESC LIMIT ?
-    """, (team, team, limit)).fetchall()
-    conn.close()
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT events, home_team, away_team
+            FROM football_matches
+            WHERE (home_team=? OR away_team=?) AND events IS NOT NULL AND events!='[]'
+            ORDER BY match_date DESC LIMIT ?
+        """, (team, team, limit)).fetchall()
     results = []
     for r in rows:
         try: evs = j.loads(r["events"])
@@ -111,8 +115,9 @@ def version(vid):
         return render_template(tmpl+".html")
     return "版本不存在", 404
 
-def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=None):
+def build_candidate_results(limit=100, date_from=None, date_to=None, league_ids=None):
     """生成候选比赛数据（含预测），供 API 和模板共用"""
+    global _odds_failed
     poisson, _ = get_engine()
     matches = get_candidate_matches(limit, date_from, date_to, league_ids)
     results = []
@@ -137,35 +142,38 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
             winner = "draw"
         confidence = round(max(hw, aw, dw) * 100, 1)
         odds_data = None
-        try:
-            sport_key = "soccer_fifa_world_cup"
-            lid = str(m["league_id"])
-            if lid == "39": sport_key = "soccer_epl"
-            elif lid == "140": sport_key = "soccer_spain_la_liga"
-            elif lid == "135": sport_key = "soccer_italy_serie_a"
-            elif lid == "78": sport_key = "soccer_germany_bundesliga"
-            elif lid == "61": sport_key = "soccer_france_ligue_one"
-            elif lid == "41": sport_key = "soccer_china_superleague"
-            elif lid == "98": sport_key = "soccer_japan_j_league"
-            elif lid == "292": sport_key = "soccer_korea_kleague1"
-            odds = get_odds_for_fixture(m["home_team"], m["away_team"], sport_key=sport_key)
-            if odds and odds.get("home_odds"):
-                ev = calculate_ev(
-                    max(hw, aw), min(hw, aw),
-                    odds.get("home_odds") if hw >= aw else odds.get("away_odds"),
-                    odds.get("away_odds") if hw >= aw else odds.get("home_odds")
-                )
-                odds_data = {
-                    "home_odds": odds.get("home_odds"),
-                    "away_odds": odds.get("away_odds"),
-                    "draw_odds": odds.get("draw_odds"),
-                    "bookmaker": odds.get("bookmaker", ""),
-                    "edge_pct": ev["edge_pct"] if ev else None,
-                    "ev_pct": ev["ev_pct"] if ev else None,
-                    "kelly": ev["kelly_fraction"] if ev else None,
-                }
-        except:
-            pass
+        if not _odds_failed:
+            try:
+                sport_key = "soccer_fifa_world_cup"
+                lid = str(m["league_id"])
+                if lid == "39": sport_key = "soccer_epl"
+                elif lid == "140": sport_key = "soccer_spain_la_liga"
+                elif lid == "135": sport_key = "soccer_italy_serie_a"
+                elif lid == "78": sport_key = "soccer_germany_bundesliga"
+                elif lid == "61": sport_key = "soccer_france_ligue_one"
+                elif lid == "41": sport_key = "soccer_china_superleague"
+                elif lid == "98": sport_key = "soccer_japan_j_league"
+                elif lid == "292": sport_key = "soccer_korea_kleague1"
+                cache_key = (m["home_team"], m["away_team"], sport_key)
+                if cache_key in _odds_cache:
+                    odds_data = _odds_cache[cache_key]
+                else:
+                    odds = get_odds_for_fixture(m["home_team"], m["away_team"], sport_key=sport_key)
+                    if odds and odds.get("home_odds"):
+                        ev = calculate_ev(
+                            max(hw, aw), min(hw, aw),
+                            odds.get("home_odds") if hw >= aw else odds.get("away_odds"),
+                            odds.get("away_odds") if hw >= aw else odds.get("home_odds")
+                        )
+                        odds_data = {
+                            "home_odds": odds.get("home_odds"),
+                            "away_odds": odds.get("away_odds"),
+                            "edge_pct": ev.get("edge_pct") if ev else None,
+                        }
+                        _odds_cache[cache_key] = odds_data
+            except Exception:
+                _odds_failed = True
+                odds_data = None
         results.append({
             "id": m["fixture_id"],
             "home": m["home_team"],
@@ -203,14 +211,13 @@ def api_candidates():
 @app.route("/api/leagues")
 def api_leagues():
     """返回有未开始比赛的联赛列表（前端动态渲染标签用）"""
-    conn = get_db()
-    rows = conn.execute("""
-        SELECT DISTINCT league_id, league_name
-        FROM football_matches
-        WHERE status IN ('Not Started','NS') AND match_date >= '2026-01-01'
-        ORDER BY league_id
-    """).fetchall()
-    conn.close()
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT DISTINCT league_id, league_name
+            FROM football_matches
+            WHERE status IN ('Not Started','NS') AND match_date >= '2026-01-01'
+            ORDER BY league_id
+        """).fetchall()
     leagues = [{"id": r["league_id"], "name": r["league_name"], "key": f"l{r['league_id']}"} for r in rows]
     return jsonify(leagues)
 
@@ -271,17 +278,16 @@ def api_generate_combos():
             return jsonify({"error": "Maximum 20 matches allowed"}), 400
         if len(match_ids) < parlay_type:
             return jsonify({"error": f"Need at least {parlay_type} matches"}), 400
-    except:
-        return jsonify({"error": "Invalid parameters"})
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid parameters"}), 400
 
     # Get match predictions
-    conn = get_db()
-    placeholders = ",".join("?" for _ in match_ids)
-    rows = conn.execute(f"""
-        SELECT fixture_id, home_team, away_team, match_date, league_name, league_id
-        FROM football_matches WHERE fixture_id IN ({placeholders})
-    """, match_ids).fetchall()
-    conn.close()
+    with get_db() as conn:
+        placeholders = ",".join("?" for _ in match_ids)
+        rows = conn.execute(f"""
+            SELECT fixture_id, home_team, away_team, match_date, league_name, league_id
+            FROM football_matches WHERE fixture_id IN ({placeholders})
+        """, match_ids).fetchall()
 
     match_map = {r["fixture_id"]: dict(r) for r in rows}
     poisson, _ = get_engine()

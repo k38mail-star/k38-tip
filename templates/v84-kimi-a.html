@@ -52,8 +52,6 @@
   .date .cnt{font-size:9px;color:#6a5a80;margin-top:2px;display:block}
   .ld{display:none;text-align:center;padding:32px;color:#6a5a80;font-size:12px}
   .ld.s{display:block}
-  .ld::after{content:'...';animation:d 1.2s steps(4) infinite}
-  @keyframes d{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
   .legend{display:none;font-size:9px;color:#8b7fa0;padding:4px 2px 6px;border-bottom:1px solid #2a2040;margin-bottom:6px;justify-content:space-between}
   .legend.s{display:flex}
   .legend .ll{display:flex;align-items:center;gap:6px}
@@ -330,7 +328,7 @@ function load(r){
   ld.classList.add('s');ml.classList.remove('s');ml.innerHTML='';lg.classList.remove('s');
   // Clear stale data immediately
   st.matches=[];st.picks=new Set();
-  const lids=[...st.leagues].map(k=>LG.find(l=>l.k===k).id);
+  const lids=[...st.leagues].map(k=>{const found=ALL_LEAGUES.find(l=>l.k===k);return found?found.id:null}).filter(Boolean);
   if(!lids.length){
     ld.classList.remove('s');
     ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">请至少选择一个联赛</div>';ml.classList.add('s');
@@ -346,7 +344,14 @@ function load(r){
     // Update match count on active date button
     const activeDate=document.querySelector('.date.sel');
     if(activeDate){const cnt=activeDate.querySelector('.cnt');if(cnt)cnt.textContent=(d.matches?.length||0)+'场'}
-  }).catch(()=>{ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">加载失败</div>';ml.classList.add('s')});}
+  }).catch(e=>{if(e.name==='AbortError')return;ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">加载失败</div>';ml.classList.add('s')});
+  // Animate loading dots
+  let dots=0;const dotInt=setInterval(()=>{dots=(dots+1)%4;ld.textContent='加载中'+'.'.repeat(dots)},400);
+  // Clear dots interval when done
+  const origHandler=ld._origHandler;
+  const cleanup=()=>{clearInterval(dotInt);ld.textContent='加载中'};
+  setTimeout(cleanup,30000); // safety timeout
+}
 function render(){
   const ml=document.getElementById('ml');ml.innerHTML='';const lg=document.getElementById('legend');const bb=document.getElementById('bb');
   if(!st.matches.length){ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
