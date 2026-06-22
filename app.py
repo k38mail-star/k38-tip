@@ -190,7 +190,7 @@ def v83():
 @app.route("/v84")
 @app.route("/v84/")
 def v84():
-    return render_template("v84.html")
+    return render_template("v84-kimi.html")
 
 @app.route("/v84/ds")
 @app.route("/v84-ds")
