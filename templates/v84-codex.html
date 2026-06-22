@@ -7,34 +7,40 @@
 <style>
 body{background:#0d1117;color:#e6edf3;font-family:-apple-system,BlinkMacSystemFont,sans-serif;margin:0;padding:16px;max-width:480px;margin:0 auto}
 h1{font-size:16px;font-weight:600;margin:0 0 12px;letter-spacing:-.3px}
-
-/* league bar - horizontal scroll */
 .lb{display:flex;gap:4px;overflow-x:auto;padding:0 0 8px;scrollbar-width:none;margin-bottom:4px}
 .lb::-webkit-scrollbar{display:none}
 .lc{flex-shrink:0;padding:3px 8px;border-radius:4px;border:1px solid #21262d;font-size:10px;cursor:pointer;color:#8b949e;white-space:nowrap}
 .lc.sel{border-color:#238636;color:#3fb950;background:rgba(35,134,54,.06)}
-
-/* date row */
 .dr{display:flex;gap:4px;margin-bottom:12px}
 .db{flex:1;padding:6px 0;border-radius:4px;border:1px solid #21262d;background:#161b22;font-size:10px;cursor:pointer;text-align:center;color:#8b949e}
 .db.sel{border-color:#238636;color:#3fb950;background:rgba(35,134,54,.06)}
 .db .n{font-size:11px;font-weight:500;color:#e6edf3;display:block}
 .db.sel .n{color:#3fb950}
 
-/* matches - single line rows */
+/* Cards - two-row with badge under recommended team */
 .ml{}
-.mr{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #161b22;cursor:pointer}
-.mr:last-child{border:none}
+.mr{background:#161b22;border:1px solid #21262d;border-radius:6px;margin-bottom:3px;cursor:pointer;padding:6px 8px}
+.mr:hover{border-color:#30363d}
+.mr-row{display:flex;align-items:center;gap:4px}
 .ck{width:14px;height:14px;border-radius:3px;border:1.5px solid #30363d;flex-shrink:0;font-size:7px;display:flex;align-items:center;justify-content:center;color:transparent}
 .ck.on{border-color:#238636;background:#238636;color:#fff}
-.tm{flex:1;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tm .fl{font-size:10px}
-.ri{text-align:right;flex-shrink:0;font-size:10px;color:#8b949e;line-height:1.3}
-.ri .p{font-weight:600;color:#3fb950}
-.ri .pb{color:#58a6ff}
-.ri .c{color:#8b949e}
 
-/* bottom bar */
+/* Teams side by side */
+.mt{flex:1;display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
+.mc{display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;min-width:0}
+.mf{font-size:14px;line-height:1}
+.mn{font-size:10px;font-weight:500;color:#c9d1d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.vs{font-size:9px;color:#484f58;flex-shrink:0;padding:0 4px}
+
+/* Badge under recommended team */
+.rec{font-size:8px;font-weight:600;padding:1px 5px;border-radius:3px;white-space:nowrap;margin-top:1px}
+.rec-h{background:rgba(35,134,54,.12);color:#3fb950}
+.rec-a{background:rgba(88,166,255,.12);color:#58a6ff}
+.rec-d{background:rgba(210,153,34,.12);color:#d29922}
+
+.ri{text-align:right;flex-shrink:0;font-size:10px;color:#8b949e;line-height:1.3}
+.ri .vl{font-weight:600;color:#e6edf3;font-size:12px}
+
 .bb{display:none;position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #21262d;padding:6px 14px;z-index:100}
 .bb.s{display:block}
 .bi{max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
@@ -88,7 +94,6 @@ function load(r){
   const now=new Date();const to=new Date(now);to.setDate(to.getDate()+r.d);
   const f=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
   const lids=[...st.leagues].map(k=>LG.find(l=>l.k===k).id);
-
   ml.innerHTML='<div style="text-align:center;padding:24px;color:#30363d;font-size:10px">加载中...</div>';
   fetch('/api/candidates?date_from='+f(now)+'&date_to='+f(to)+'&leagues='+lids.join(',')).then(r=>r.json()).then(d=>{
     st.matches=d.matches||[];st.picks=new Set();render();
@@ -101,10 +106,24 @@ function render(){
   if(!st.matches.length){ml.innerHTML='<div style="text-align:center;padding:24px;color:#30363d;font-size:10px">暂无</div>';bb.classList.remove('s');return}
   bb.classList.add('s');
   st.matches.forEach((m,i)=>{
-    const ih=m.prediction==='主胜';
-    const odds=m.odds?(ih?m.odds.home_odds:m.odds.away_odds):null;
+    const p=m.prediction;const ih=p==='主胜';const ia=p==='客胜';const id=p==='平局';
+    let odds=null;if(m.odds){if(ih)odds=m.odds.home_odds;else if(ia)odds=m.odds.away_odds;else if(id)odds=m.odds.draw_odds}
+    const ed=m.odds&&m.odds.edge_pct;
+    const hF=m.home_flag||'⚽';const aF=m.away_flag||'⚽';
+    const hN=m.home_cn||m.home;const aN=m.away_cn||m.away;
+    let rc=ia?'rec-a':(id?'rec-d':'rec-h');
+    let bd='';
+    if(id){
+      bd='<div class="rec '+rc+'" style="margin:2px auto 0">⚖️ '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
+    } else {
+      bd='<div class="rec '+rc+'">🏆 '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
+    }
     const row=document.createElement('div');row.className='mr';
-    row.innerHTML='<div class="ck on">✓</div><div class="tm"><span class="fl">'+(m.home_flag||'')+'</span> '+(m.home_cn||m.home)+' vs '+(m.away_cn||m.away)+'</div><div class="ri"><div class="'+(ih?'p':'pb')+'">'+m.prediction+(odds?' @'+odds:'')+'</div><div class="c">'+m.confidence+'% · '+m.league.slice(-4)+'</div></div>';
+    if(id){
+      row.innerHTML='<div class="mr-row"><div class="ck on">✓</div><div class="mt"><div class="mc"><span class="mf">'+hF+'</span><span class="mn">'+hN+'</span></div><div class="vs">VS</div><div class="mc"><span class="mf">'+aF+'</span><span class="mn">'+aN+'</span></div></div><div class="ri"><div class="vl">'+m.confidence+'%</div></div></div>'+bd;
+    } else {
+      row.innerHTML='<div class="mr-row"><div class="ck on">✓</div><div class="mt"><div class="mc"><span class="mf">'+hF+'</span><span class="mn">'+hN+'</span>'+(ih?bd:'')+'</div><div class="vs">VS</div><div class="mc"><span class="mf">'+aF+'</span><span class="mn">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="ri"><div class="vl">'+m.confidence+'%</div></div></div>';
+    }
     const ck=row.querySelector('.ck');
     ck.onclick=e=>{e.stopPropagation();ck.classList.toggle('on');ck.textContent=ck.classList.contains('on')?'✓':'';if(ck.classList.contains('on'))st.picks.add(m.id);else st.picks.delete(m.id);up()};
     row.onclick=()=>ck.click();

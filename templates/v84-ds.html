@@ -29,22 +29,31 @@
   .ld::after{content:'...';animation:dk 1.2s steps(4) infinite}
   @keyframes dk{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
 
-  /* Match rows - ultra compact */
+  /* Match rows - two-row with badge under recommended team */
   .ml{display:none}
   .ml.s{display:block}
-  .mr{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#161b22;border:1px solid #21262d;border-radius:6px;margin-bottom:3px;cursor:pointer;transition:.1s}
+  .mr{background:#161b22;border:1px solid #21262d;border-radius:6px;margin-bottom:3px;cursor:pointer;transition:.1s;padding:8px 10px}
   .mr:hover{border-color:#30363d}
   .mr.sel{border-color:#d9a05b;box-shadow:0 0 0 1px rgba(217,160,91,.2)}
+  .mr-row{display:flex;align-items:center;gap:6px}
   .ck{width:16px;height:16px;border-radius:4px;border:1.5px solid #30363d;flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:8px;color:transparent}
   .ck.on{border-color:#238636;background:#238636;color:#fff}
-  .mi{flex:1;min-width:0}
-  .mt{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mm{font-size:10px;color:#8b949e;margin-top:1px;display:flex;gap:6px}
-  .mm .tag{padding:1px 5px;border-radius:3px;font-size:9px;font-weight:500}
-  .tag-g{background:rgba(35,134,54,.1);color:#3fb950}
-  .tag-b{background:rgba(88,166,255,.1);color:#58a6ff}
-  .edge{cursor:pointer;font-weight:600;color:#d29922}
+  
+  /* Teams side by side */
+  .mr-teams{flex:1;display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0}
+  .mr-t{display:flex;flex-direction:column;align-items:center;gap:1px;flex:1;min-width:0}
+  .mr-t-flag{font-size:16px;line-height:1}
+  .mr-t-name{font-size:11px;font-weight:500;color:#c9d1d9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .mr-vs{font-size:10px;color:#484f58;flex-shrink:0;padding:0 4px}
+  
+  /* Recommendation badge */
+  .mr-rec{font-size:8px;font-weight:600;padding:1px 6px;border-radius:3px;white-space:nowrap;margin-top:1px}
+  .mr-rec-h{background:rgba(35,134,54,.12);color:#3fb950}
+  .mr-rec-a{background:rgba(88,166,255,.12);color:#58a6ff}
+  .mr-rec-d{background:rgba(210,153,34,.12);color:#d29922}
+  
   .mr-info{text-align:right;flex-shrink:0;font-size:10px;color:#8b949e;line-height:1.3}
+  .mr-info .vl{font-weight:600;color:#e6edf3;font-size:13px}
 
   /* Bottom bar */
   .bb{display:none;position:fixed;bottom:0;left:0;right:0;background:#161b22;border-top:1px solid #21262d;padding:8px 14px;z-index:100}
@@ -189,26 +198,38 @@ function render() {
   bb.classList.add('s');
 
   st.matches.forEach((m, i) => {
-    const isH = m.prediction === '主胜';
-    const odds = m.odds ? (isH ? m.odds.home_odds : m.odds.away_odds) : null;
+    const pred = m.prediction;
+    const isH = pred === '主胜';
+    const isA = pred === '客胜';
+    const isD = pred === '平局';
+    let odds = null;
+    if(m.odds){
+      if(isH) odds=m.odds.home_odds;
+      else if(isA) odds=m.odds.away_odds;
+      else if(isD) odds=m.odds.draw_odds;
+    }
     const edge = m.odds && m.odds.edge_pct;
     const tN = m.home_cn || m.home;
     const aN = m.away_cn || m.away;
+    const hF = m.home_flag || '⚽';
+    const aF = m.away_flag || '⚽';
+
+    let recClass = isA ? 'mr-rec-a' : (isD ? 'mr-rec-d' : 'mr-rec-h');
+    let badgeHtml = '';
+    if(isD){
+      badgeHtml = '<div class="mr-rec '+recClass+'" style="margin:2px auto 0">⚖️ '+pred+(odds?' @'+odds:'')+(edge?' +'+edge+'%':'')+'</div>';
+    } else {
+      badgeHtml = '<div class="mr-rec '+recClass+'">🏆 '+pred+(odds?' @'+odds:'')+(edge?' +'+edge+'%':'')+'</div>';
+    }
 
     const row = document.createElement('div');
-    row.className = 'mr';
-    row.innerHTML = `
-      <div class="ck on">✓</div>
-      <div class="mi">
-        <div class="mt">${m.home_flag||''} ${tN} vs ${aN} ${m.away_flag||''}</div>
-        <div class="mm">
-          <span class="tag ${isH?'tag-g':'tag-b'}">${m.prediction}</span>
-          ${odds?'<span>@'+odds+'</span>':''}
-          ${edge?'<span class="edge">+'+edge+'%</span>':''}
-        </div>
-      </div>
-      <div class="mr-info">${m.confidence}%<br>${m.league.slice(-4)}</div>
-    `;
+    row.className = 'mr sel';
+
+    if(isD){
+      row.innerHTML = '<div class="mr-row"><div class="ck on">✓</div><div class="mr-teams"><div class="mr-t"><span class="mr-t-flag">'+hF+'</span><span class="mr-t-name">'+tN+'</span></div><div class="mr-vs">VS</div><div class="mr-t"><span class="mr-t-flag">'+aF+'</span><span class="mr-t-name">'+aN+'</span></div></div><div class="mr-info"><div class="vl">'+m.confidence+'%</div></div></div>'+badgeHtml;
+    } else {
+      row.innerHTML = '<div class="mr-row"><div class="ck on">✓</div><div class="mr-teams"><div class="mr-t"><span class="mr-t-flag">'+hF+'</span><span class="mr-t-name">'+tN+'</span>'+(isH?badgeHtml:'')+'</div><div class="mr-vs">VS</div><div class="mr-t"><span class="mr-t-flag">'+aF+'</span><span class="mr-t-name">'+aN+'</span>'+(isA?badgeHtml:'')+'</div></div><div class="mr-info"><div class="vl">'+m.confidence+'%</div></div></div>';
+    }
 
     const ck = row.querySelector('.ck');
     ck.onclick = e => {
