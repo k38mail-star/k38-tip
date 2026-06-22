@@ -43,7 +43,7 @@ def get_candidate_matches(limit=30, date_from=None, date_to=None):
     rows = conn.execute(f"""
         SELECT fixture_id, home_team, away_team, home_team_cn, away_team_cn,
                home_flag, away_flag, match_date, league_name, league_id,
-               COALESCE(match_time, match_date) as match_time
+               match_date as match_time
         FROM football_matches
         WHERE {where_sql}
         ORDER BY match_date ASC LIMIT ?
@@ -82,41 +82,32 @@ def index():
 @app.route("/v<int:vid>")
 @app.route("/v<int:vid>/")
 def version(vid):
-    if vid == 81: return render_template("v81-home.html")
-    if vid == 83: return render_template("v83-home.html")
-    if vid == 84: return render_template("v84-home.html")
-    return render_template(f"v{vid}.html")
+    name = {2:"v2", 3:"v3", 4:"v4", 5:"v5", 81:"v81-home"}
+    tmpl = name.get(vid)
+    if tmpl:
+        return render_template(tmpl+".html")
+    return "版本不存在", 404
 
-@app.route("/api/candidates")
-def api_candidates():
-    """返回候选比赛列表（带预测）"""
+def build_candidate_results(limit=30, date_from=None, date_to=None):
+    """生成候选比赛数据（含预测），供 API 和模板共用"""
     poisson, _ = get_engine()
-    date_from = request.args.get("date_from")
-    date_to = request.args.get("date_to")
-    matches = get_candidate_matches(30, date_from, date_to)
-
+    matches = get_candidate_matches(limit, date_from, date_to)
     results = []
     for m in matches:
         pred = poisson.predict_score(m["home_team"], m["away_team"], m["league_id"])
         if "error" in pred: continue
-
         hw = pred["win_prob"]["home"]
         aw = pred["win_prob"]["away"]
         winner = "home" if hw >= aw else "away"
         confidence = round(max(hw, aw) * 100, 1)
-        
-        # Get corners data
         home_corners = get_stats_for_team(m["home_team"], "corners")
         away_corners = get_stats_for_team(m["away_team"], "corners")
         avg_corners = round(
             (sum(home_corners)/len(home_corners) if home_corners else 5) +
             (sum(away_corners)/len(away_corners) if away_corners else 3.5), 1
         )
-
-        # Fetch odds from The Odds API (try, fail gracefully)
         odds_data = None
         try:
-            # Map league name to sport key
             sport_key = "soccer_fifa_world_cup"
             lid = str(m["league_id"])
             if lid == "39": sport_key = "soccer_epl"
@@ -127,7 +118,6 @@ def api_candidates():
             elif lid == "41": sport_key = "soccer_china_superleague"
             elif lid == "98": sport_key = "soccer_japan_j_league"
             elif lid == "292": sport_key = "soccer_korea_kleague1"
-            
             odds = get_odds_for_fixture(m["home_team"], m["away_team"], sport_key=sport_key)
             if odds and odds.get("home_odds"):
                 ev = calculate_ev(
@@ -146,7 +136,6 @@ def api_candidates():
                 }
         except:
             pass
-
         results.append({
             "id": m["fixture_id"],
             "date": m["match_date"],
@@ -167,11 +156,23 @@ def api_candidates():
             "avg_corners": avg_corners,
             "odds": odds_data,
         })
-
-    # Filter out unreliable predictions
     results = [r for r in results if r["confidence"] >= 5]
     results.sort(key=lambda x: -x["confidence"])
+    return results
+
+@app.route("/api/candidates")
+def api_candidates():
+    """返回候选比赛列表（带预测）JSON"""
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+    results = build_candidate_results(30, date_from, date_to)
     return jsonify({"matches": results, "total": len(results)})
+
+@app.route("/v83")
+@app.route("/v83/")
+def v83():
+    matches = build_candidate_results(30)
+    return render_template("v83.html", matches=matches)
 
 @app.route("/api/generate-combos")
 def api_generate_combos():
