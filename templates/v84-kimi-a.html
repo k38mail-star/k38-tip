@@ -6,7 +6,7 @@
 <title>K38 ⚽ 波波机</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{background:#0d0f14;color:#e8e4f0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','SF Pro',sans-serif;padding:24px 14px 110px;max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
+  body{background:#0d0f14;color:#e8e4f0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','SF Pro',sans-serif;padding:24px 14px 130px;max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
   
   /* 世界杯球场氛围 - CSS手绘 */
   body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-2;
@@ -134,6 +134,7 @@
   .ar-btn.primary:hover{box-shadow:0 4px 12px rgba(124,92,191,.3)}
   .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#161122;border:1px solid #2a2040;padding:10px 20px;border-radius:10px;font-size:12px;color:#a080d8;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
   .toast.s{opacity:1}
+  .disclaimer{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:7px;color:#3c3050;padding:4px;background:rgba(13,15,20,.8);z-index:50;backdrop-filter:blur(4px)}
 
   /* Animations */
   @keyframes ballIn{0%{opacity:0;transform:scale(0) translateY(20px)}60%{transform:scale(1.1) translateY(-4px)}100%{opacity:1;transform:scale(1) translateY(0)}}
@@ -145,11 +146,10 @@
 </style>
 </head>
 <body>
-<h1>⚽ <span style="font-size:26px">波波机</span></h1>
-<div class="subtitle">两元一串的波波机 🍢</div>
-<div style="text-align:center;font-size:9px;color:#6a5a80;margin-bottom:16px;line-height:1.6">
-两元一串！不管是二串一、三串一、<br>四串一、还是五串一，都是两元一串的波波机<br>
-<span style="font-size:8px;color:#4a3a60">⚠️ 线下实体店自行购买 · 本站仅供看球娱乐参考</span>
+<h1>⚽ <span style="font-size:28px">波波机</span></h1>
+<div class="subtitle" style="font-size:11px;color:#a080d8;font-weight:500">看球必备 · 两元壹串波波鸡 🐔</div>
+<div style="text-align:center;font-size:9px;color:#6a5a80;margin-bottom:12px;line-height:1.5">
+两元壹串！不管是二串一、三串一、四串一、还是五串一，都是两元壹串的波波鸡 🐔
 </div>
 <div class="tags" id="tags"></div>
 <div class="dates" id="dates"></div>
@@ -157,7 +157,8 @@
 <div class="legend" id="legend"><div class="ll"><span>🤖 波波机</span><span class="t" id="tzDisplay">UTC+8</span></div><div class="lr"><span id="timeDisplay">--:--</span><span>|</span><span>⚡ 越多越可靠</span></div></div>
 <div class="ml" id="ml"></div>
 
-<div class="bb" id="bb">
+<div class="disclaimer">⚠️ 合法体彩店购买 · 本站仅供看球娱乐参考</div>
+<footer class="bb" id="bb">
   <div class="bi">
     <div class="bi-info" id="infoBar">
       <span>已选 <span class="num" id="sc">0</span> 场</span>
@@ -171,7 +172,7 @@
       <div class="fb-hint" id="fbHint">选 2 场以上生成组合</div>
     </div>
   </div>
-</div>
+</footer>
 
 <!-- Animation Overlay -->
 <div class="anim-overlay" id="animOverlay">
