@@ -1,16 +1,26 @@
 """K38 Tip - Football Betting Recommendation Engine (Updated Flow)"""
-import json, sqlite3, math, itertools, random
+import json, sqlite3, math, itertools
 from odds_service import get_odds_for_fixture, calculate_ev
-from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from engine.poisson import PoissonModel
 from engine.monte_carlo import MonteCarlo
-from engine.kelly import KellyCriterion
-from engine.walk_forward import WalkForward
-from engine.stress_test import StressTest
 
 app = Flask(__name__)
 DB = "/opt/k38-football/football.db"
+
+# Ensure indexes exist for performance
+def ensure_indexes():
+    conn = sqlite3.connect(DB)
+    conn.executescript("""
+        CREATE INDEX IF NOT EXISTS idx_matches_status ON football_matches(status);
+        CREATE INDEX IF NOT EXISTS idx_matches_date ON football_matches(match_date);
+        CREATE INDEX IF NOT EXISTS idx_matches_league ON football_matches(league_id);
+        CREATE INDEX IF NOT EXISTS idx_matches_fixture ON football_matches(fixture_id);
+    """)
+    conn.commit()
+    conn.close()
+
+ensure_indexes()
 
 _poisson = None
 _monte = None
@@ -55,12 +65,11 @@ def get_candidate_matches(limit=100, date_from=None, date_to=None, league_ids=No
         params.extend(league_ids)
     where_sql = " AND ".join(where)
     rows = conn.execute(f"""
-        SELECT fixture_id, home_team, away_team, home_team_cn, away_team_cn,
-               home_flag, away_flag, match_date, league_name, league_id,
-               match_date as match_time
+        SELECT DISTINCT fixture_id, home_team, away_team, home_team_cn, away_team_cn,
+               home_flag, away_flag, match_date, league_name, league_id
         FROM football_matches
         WHERE {where_sql}
-        ORDER BY match_date ASC LIMIT 30
+        ORDER BY match_date ASC LIMIT 100
     """, params).fetchall()
     conn.close()
     return [dict(r) for r in rows]
@@ -127,12 +136,6 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
         else:
             winner = "draw"
         confidence = round(max(hw, aw, dw) * 100, 1)
-        home_corners = get_stats_for_team(m["home_team"], "corners")
-        away_corners = get_stats_for_team(m["away_team"], "corners")
-        avg_corners = round(
-            (sum(home_corners)/len(home_corners) if home_corners else 5) +
-            (sum(away_corners)/len(away_corners) if away_corners else 3.5), 1
-        )
         odds_data = None
         try:
             sport_key = "soccer_fifa_world_cup"
@@ -165,8 +168,6 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
             pass
         results.append({
             "id": m["fixture_id"],
-            "date": m["match_date"],
-            "match_time": m["match_time"],
             "home": m["home_team"],
             "away": m["away_team"],
             "home_cn": m.get("home_team_cn", ""),
@@ -174,14 +175,16 @@ def build_candidate_results(limit=30, date_from=None, date_to=None, league_ids=N
             "home_flag": m.get("home_flag", ""),
             "away_flag": m.get("away_flag", ""),
             "league": m["league_name"],
+            "date": m["match_date"],
             "prediction": "主胜" if winner == "home" else ("客胜" if winner == "away" else "平局"),
             "confidence": confidence,
             "home_xg": pred["home_xg"],
             "away_xg": pred["away_xg"],
-            "btts": round(pred["btts"], 2) if isinstance(pred.get("btts"), float) else 0,
-            "over_2_5": pred["over_under"]["2.5"]["over"],
-            "avg_corners": avg_corners,
-            "odds": odds_data,
+            "odds": {
+                "home_odds": (odds_data or {}).get("home_odds"),
+                "away_odds": (odds_data or {}).get("away_odds"),
+                "edge_pct": (odds_data or {}).get("edge_pct"),
+            } if odds_data else None,
         })
     results = [r for r in results if r["confidence"] >= 5]
     results.sort(key=lambda x: -x["confidence"])
