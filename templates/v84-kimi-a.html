@@ -135,7 +135,7 @@
   .ar-btn.primary:hover{box-shadow:0 4px 12px rgba(124,92,191,.3)}
   .toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:#161122;border:1px solid #2a2040;padding:10px 20px;border-radius:10px;font-size:12px;color:#a080d8;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
   .toast.s{opacity:1}
-  .disclaimer{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:7px;color:#3c3050;padding:4px;background:rgba(13,15,20,.8);z-index:50;backdrop-filter:blur(4px)}
+  .disclaimer{position:fixed;bottom:0;left:0;right:0;text-align:center;font-size:9px;color:#3c3050;padding:4px;background:rgba(13,15,20,.8);z-index:50;backdrop-filter:blur(4px)}
 
   /* Animations */
   @keyframes ballIn{0%{opacity:0;transform:scale(0) translateY(20px)}60%{transform:scale(1.1) translateY(-4px)}100%{opacity:1;transform:scale(1) translateY(0)}}
@@ -166,7 +166,7 @@
       <span class="tag-c" id="comboTag">—</span>
     </div>
     <div class="fb-wrap">
-      <button class="fb" id="gb" disabled>
+      <button class="fb" id="gb" disabled aria-label="生成智能串关组合">
         <span>⚽</span>
         <span class="fb-label">智能组合</span>
       </button>
@@ -343,17 +343,14 @@ function load(r){
   const signal=st._abort.signal;
   const n=new Date(),t=new Date(n);t.setDate(t.getDate()+r.d);
   const f=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
-  fetch('/api/candidates?date_from='+f(n)+'&date_to='+f(t)+'&leagues='+lids.join(','),{signal}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(d=>{ld.classList.remove('s');st.matches=d.matches||[];st.picks=new Set();render();
+  // Animate loading dots
+  let dots=0;const dotInt=setInterval(()=>{dots=(dots+1)%4;ld.textContent='加载中'+'.'.repeat(dots)},400);
+  const cleanup=()=>{clearInterval(dotInt);ld.textContent='加载中'};
+  fetch('/api/candidates?date_from='+f(n)+'&date_to='+f(t)+'&leagues='+lids.join(','),{signal}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(d=>{cleanup();ld.classList.remove('s');st.matches=d.matches||[];st.picks=new Set();render();
     // Update match count on active date button
     const activeDate=document.querySelector('.date.sel');
     if(activeDate){const cnt=activeDate.querySelector('.cnt');if(cnt)cnt.textContent=(d.matches?.length||0)+'场'}
-  }).catch(e=>{if(e.name==='AbortError')return;ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">加载失败</div>';ml.classList.add('s')});
-  // Animate loading dots
-  let dots=0;const dotInt=setInterval(()=>{dots=(dots+1)%4;ld.textContent='加载中'+'.'.repeat(dots)},400);
-  // Clear dots interval when done
-  const origHandler=ld._origHandler;
-  const cleanup=()=>{clearInterval(dotInt);ld.textContent='加载中'};
-  setTimeout(cleanup,30000); // safety timeout
+  }).catch(e=>{cleanup();if(e.name==='AbortError')return;ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">加载失败</div>';ml.classList.add('s')});
 }
 function render(){
   const ml=document.getElementById('ml');ml.innerHTML='';const lg=document.getElementById('legend');const bb=document.getElementById('bb');
@@ -437,17 +434,19 @@ function render(){
     if(id)bd='<div class="mc-rec '+rc+'">'+ai+' ⚖️ '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     else bd='<div class="mc-rec '+rc+'">'+ai+' 🏆 '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     const row=document.createElement('div');row.className='mc';
-    if(id)row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
-    else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div>';
+    if(id)row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
+    else row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div>';
     // Add time display
     const timeEl=row.querySelector('.mc-info');
     if(timeEl)timeEl.innerHTML='<span class="lb">'+(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span><span class="lb" style="font-size:7px;display:block;margin-top:0">胜率</span></div>';
     row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
     ml.appendChild(row);
-    // Auto-select this match
-    st.picks.add(m.id);
-    const ck=row.querySelector('.ck');
-    ck.classList.add('on');ck.textContent='✓';row.classList.add('sel');
+    // Auto-select only high-confidence matches (>60%)
+    if(m.confidence > 60){
+      st.picks.add(m.id);
+      const ck=row.querySelector('.ck');
+      ck.classList.add('on');ck.textContent='✓';ck.setAttribute('aria-checked','true');row.classList.add('sel');
+    }
   });up();
   
   // Apply pagination
@@ -469,11 +468,12 @@ function up(){
   const tag=document.getElementById('comboTag');
   const hint=document.getElementById('fbHint');
   if(actual<2){tag.textContent='—';if(hint)hint.textContent='选 2 场以上生成组合'}
-  else{const maxT=capped==2?'2串1':capped+'串1';tag.textContent=maxT;if(hint)hint.textContent=actual>6?'已选'+actual+'场·取前6串1 ✓':'选'+actual+'场·已就绪 ✓'}}
+  else{const maxT=capped==2?'2串1':capped+'串1';tag.textContent=maxT;if(hint)hint.textContent=actual>6?'已选'+actual+'场·取胜率最高6场组合':'选'+actual+'场·已就绪 ✓'}}
 
 // Global toggle function
 function togCK(el,id){
   el.classList.toggle('on');el.textContent=el.classList.contains('on')?'✓':'';
+  el.setAttribute('aria-checked',el.classList.contains('on')?'true':'false');
   const card=el.closest('.mc');
   if(el.classList.contains('on')){st.picks.add(id);card.classList.add('sel')}
   else{st.picks.delete(id);card.classList.remove('sel')}

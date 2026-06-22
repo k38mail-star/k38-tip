@@ -1,7 +1,4 @@
-"""Poisson Distribution Model for Football Goal Prediction.
-
-基于 Poisson 分布的进球预测模型。
-"""
+"""Poisson Distribution Model for Football Goal Prediction."""
 import math
 import sqlite3
 from datetime import datetime
@@ -34,17 +31,23 @@ class PoissonModel:
         league_goals = defaultdict(list)
         for r in rows:
             league_goals[r["league_id"]].extend([r["home_goals"], r["away_goals"]])
-        self._league_avg = {lid: sum(g)/len(g) for lid, g in league_goals.items()}
-        overall_avg = sum(sum(g) for g in league_goals.values()) / sum(len(g) for g in league_goals.values())
+        # Only use leagues with sufficient data (min 10 matches = 20 goal entries)
+        self._league_avg = {
+            lid: sum(g) / len(g)
+            for lid, g in league_goals.items()
+            if len(g) >= 20
+        }
+        all_goals = [g for goals in league_goals.values() for g in goals]
+        overall_avg = sum(all_goals) / len(all_goals) if all_goals else 2.5
 
         team_scored = defaultdict(list)
         team_conceded = defaultdict(list)
         for r in rows:
             try:
-                match_dt = datetime.strptime(r["match_date"], "%Y-%m-%d")
+                match_dt = datetime.strptime(r["match_date"][:10], "%Y-%m-%d")
                 days_ago = (datetime.now() - match_dt).days
                 w = math.exp(-days_ago / (365 * (1 - recency_weight) + 1))
-            except:
+            except (ValueError, TypeError):
                 w = 0.5
             team_scored[r["home_team"]].append((r["home_goals"], w))
             team_conceded[r["home_team"]].append((r["away_goals"], w))
@@ -83,9 +86,12 @@ class PoissonModel:
             for a in range(max_g + 1):
                 p = self._poisson(h, home_xg) * self._poisson(a, away_xg)
                 probs[(h, a)] = p
-                if h > a: hw += p
-                elif h == a: dr += p
-                else: aw += p
+                if h > a:
+                    hw += p
+                elif h == a:
+                    dr += p
+                else:
+                    aw += p
 
         ou = {}
         for line in [0.5, 1.5, 2.5, 3.5, 4.5, 5.5]:
@@ -103,20 +109,21 @@ class PoissonModel:
             "over_under": ou,
             "btts": round(btts, 4),
             "fair_odds": {
-                "home": round(1/hw, 2) if hw > 0.001 else 999,
-                "draw": round(1/dr, 2) if dr > 0.001 else 999,
-                "away": round(1/aw, 2) if aw > 0.001 else 999,
+                "home": round(1 / hw, 2) if hw > 0.001 else 999,
+                "draw": round(1 / dr, 2) if dr > 0.001 else 999,
+                "away": round(1 / aw, 2) if aw > 0.001 else 999,
             }
         }
 
     @staticmethod
     def _poisson(k, lam):
-        if lam <= 0: return 1.0 if k == 0 else 0.0
+        if lam <= 0:
+            return 1.0 if k == 0 else 0.0
         return math.exp(-lam) * (lam ** k) / math.factorial(k)
 
 
 if __name__ == "__main__":
-    import json
+    import json as _json
     m = PoissonModel()
     if m.fit():
-        print(json.dumps(m.predict_score("England", "Brazil", 1), indent=2, ensure_ascii=False))
+        print(_json.dumps(m.predict_score("England", "Brazil", 1), indent=2, ensure_ascii=False))
