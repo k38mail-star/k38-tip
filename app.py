@@ -15,6 +15,7 @@ DB = "/opt/k38-football/football.db"
 _poisson = None
 _monte = None
 _pred_cache = {}  # fixture_id -> prediction data cache
+_odds_cache = {}  # (home, away, sport) -> odds data cache
 _MAX_CACHE = 500
 
 def cache_pred(fid, pred):
@@ -38,9 +39,9 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-def get_candidate_matches(limit=30, date_from=None, date_to=None, league_ids=None):
+def get_candidate_matches(limit=100, date_from=None, date_to=None, league_ids=None):
     conn = get_db()
-    where = ["status IN ('Not Started', 'NS')"]
+    where = ["status IN ('Not Started', 'NS')", "match_date >= '2026-01-01'"]
     params = []
     if date_from:
         where.append("DATE(match_date) >= ?")
@@ -193,8 +194,22 @@ def api_candidates():
     date_to = request.args.get("date_to")
     leagues = request.args.get("leagues")
     league_ids = [int(x) for x in leagues.split(",") if x.strip().isdigit()] if leagues else None
-    results = build_candidate_results(30, date_from, date_to, league_ids)
+    results = build_candidate_results(100, date_from, date_to, league_ids)
     return jsonify({"matches": results, "total": len(results)})
+
+@app.route("/api/leagues")
+def api_leagues():
+    """返回有未开始比赛的联赛列表（前端动态渲染标签用）"""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT DISTINCT league_id, league_name
+        FROM football_matches
+        WHERE status IN ('Not Started','NS') AND match_date >= '2026-01-01'
+        ORDER BY league_id
+    """).fetchall()
+    conn.close()
+    leagues = [{"id": r["league_id"], "name": r["league_name"], "key": f"l{r['league_id']}"} for r in rows]
+    return jsonify(leagues)
 
 @app.route("/v83")
 @app.route("/v83/")
@@ -281,6 +296,10 @@ def api_generate_combos():
         return jsonify({"error": "Not enough valid matches"})
 
     all_combos = list(itertools.combinations(match_list, parlay_type))
+    # Cap combinations to prevent OOM
+    MAX_COMBOS = 5000
+    if len(all_combos) > MAX_COMBOS:
+        all_combos = all_combos[:MAX_COMBOS]
     results = []
 
     for combo in all_combos:
@@ -298,20 +317,33 @@ def api_generate_combos():
             if "error" in pred: continue
             hw = pred["win_prob"]["home"]
             aw = pred["win_prob"]["away"]
-            win_prob = max(hw, aw)
+            dw = pred["win_prob"]["draw"]
+            # Pick highest
+            if hw >= aw and hw >= dw:
+                win_prob = hw
+                bet_type = "home_win"
+                pred_label = "主胜"
+            elif aw >= hw and aw >= dw:
+                win_prob = aw
+                bet_type = "away_win"
+                pred_label = "客胜"
+            else:
+                win_prob = dw
+                bet_type = "draw"
+                pred_label = "平局"
             combo_hit_prob *= win_prob
 
             mc_input.append({
                 "home_xg": pred["home_xg"],
                 "away_xg": pred["away_xg"],
-                "bet_type": "home_win" if hw >= aw else "away_win"
+                "bet_type": bet_type,
             })
             combo_details.append({
                 "fixture_id": fid,
                 "home": m["home_team"], "away": m["away_team"],
                 "date": m["match_date"], "league": m["league_name"],
-                "prediction": "主胜" if hw >= aw else "客胜",
-                "confidence": round(max(hw, aw) * 100, 1),
+                "prediction": pred_label,
+                "confidence": round(win_prob * 100, 1),
             })
 
         if len(combo_details) < parlay_type: continue
@@ -356,8 +388,10 @@ def predict_match(fixture_id):
     pred["monte_carlo"] = sim
     return jsonify(pred)
 
+# Warm up engine on import (works for both CLI and gunicorn)
+print("Warming up prediction engine...", flush=True)
+get_engine()
+print("Engine ready!", flush=True)
+
 if __name__ == "__main__":
-    print("Warming up prediction engine...")
-    get_engine()
-    print("Engine ready!")
     app.run(host="0.0.0.0", port=7890, debug=False)

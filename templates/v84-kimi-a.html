@@ -153,11 +153,26 @@ const LG=[
   {k:'wc',id:1,l:'世界杯',f:'🌍'},{k:'epl',id:39,l:'英超',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{k:'la',id:140,l:'西甲',f:'🇪🇸'},
   {k:'sa',id:135,l:'意甲',f:'🇮🇹'},{k:'bl',id:78,l:'德甲',f:'🇩🇪'},{k:'l1',id:61,l:'法甲',f:'🇫🇷'},
 ];
-const st={leagues:new Set(['wc']),picks:new Set(),matches:[]};
+const st={leagues:new Set(),picks:new Set(),matches:[]};
+
+// Load saved preferences
+function loadPrefs(){
+  try{
+    const saved=JSON.parse(localStorage.getItem('k38_leagues')||'["wc"]');
+    saved.forEach(k=>{if(LG.find(l=>l.k===k))st.leagues.add(k)});
+  }catch(e){st.leagues.add('wc')}
+  if(!st.leagues.size)st.leagues.add('wc');
+}
+
+// Save preferences
+function savePrefs(){
+  try{localStorage.setItem('k38_leagues',JSON.stringify([...st.leagues]))}catch(e){}
+}
 function init(){
+  loadPrefs();
   const tg=document.getElementById('tags');
-  LG.forEach((l,i)=>{const e=document.createElement('span');e.className='tag'+(i===0?' sel':'');e.innerHTML=l.f+'&nbsp;'+l.l;
-    e.onclick=()=>{e.classList.toggle('sel');if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')}const sel=document.querySelector('.date.sel');if(sel)sel.click()};tg.appendChild(e)});
+  LG.forEach((l,i)=>{const e=document.createElement('span');e.className='tag'+(st.leagues.has(l.k)?' sel':'');e.innerHTML=l.f+'&nbsp;'+l.l;
+    e.onclick=()=>{e.classList.toggle('sel');if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')};savePrefs();const sel=document.querySelector('.date.sel');if(sel)sel.click()};tg.appendChild(e)});
   [{l:'今天',d:0},{l:'3天',d:2},{l:'5天',d:4},{l:'7天',d:6}].forEach(r=>{const e=document.createElement('div');e.className='date';e.innerHTML=r.l+'<span class="cnt"></span>';
     e.onclick=()=>{document.querySelectorAll('.date').forEach(b=>b.classList.remove('sel'));e.classList.add('sel');load(r)};document.getElementById('dates').appendChild(e)});
   document.querySelector('.date').click();
@@ -223,11 +238,11 @@ function render(){
     if(id)bd='<div class="mc-rec '+rc+'">'+ai+' ⚖️ '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     else bd='<div class="mc-rec '+rc+'">'+ai+' 🏆 '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     const row=document.createElement('div');row.className='mc';
-    if(id)row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info"><span class="lb">信心</span><div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
-    else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><span class="lb">信心</span><div class="vl">'+m.confidence+'%</div></div></div>';
+    if(id)row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
+    else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div>';
     // Add time display
     const timeEl=row.querySelector('.mc-info');
-    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.match_time||m.date)+'</span><div class="vl">'+m.confidence+'%</div>';
+    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.match_time||m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span></div>';
     row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
     ml.appendChild(row);
     // Auto-select this match
