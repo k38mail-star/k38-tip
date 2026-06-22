@@ -160,7 +160,7 @@
 
 <script>
 const LG=[
-  {k:'wc',id:1,l:'世界杯',f:'🌍'},{k:'epl',id:39,l:'英超',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{k:'la',id:140,l:'西甲',f:'🇪🇸'},
+  {k:'wc',id:1,l:'世界杯',f:'🌍🔥'},{k:'epl',id:39,l:'英超',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{k:'la',id:140,l:'西甲',f:'🇪🇸'},
   {k:'sa',id:135,l:'意甲',f:'🇮🇹'},{k:'bl',id:78,l:'德甲',f:'🇩🇪'},
 ];
 const LG_MORE=[
@@ -168,6 +168,14 @@ const LG_MORE=[
   {k:'j1',id:98,l:'J1联赛',f:'🇯🇵'},{k:'k1',id:292,l:'K1联赛',f:'🇰🇷'},
   {k:'copa',id:1,l:'美洲杯',f:'🏆'},
 ];
+
+// Hot teams (big clubs / high-attraction matches)
+const HOT_TEAMS=new Set([
+  'Brazil','Argentina','France','England','Germany','Spain','Netherlands','Portugal','Italy',
+  'Real Madrid','Barcelona','Liverpool','Man United','Manchester City','Arsenal','Chelsea',
+  'Bayern','Juventus','Milan','Inter','PSG','Ajax',
+  '巴西','阿根廷','法国','英格兰','德国','西班牙','荷兰','葡萄牙','意大利',
+]);
 const ALL_LEAGUES=[...LG,...LG_MORE];
 const st={leagues:new Set(),picks:new Set(),matches:[]};
 
@@ -331,6 +339,13 @@ function render(){
     return '<span style="color:#3c3050">⚡</span>';
   }
   
+  // Check if match is hot (involves popular teams)
+  function isHotMatch(m){
+    const h=m.home_cn||m.home||'';
+    const a=m.away_cn||m.away||'';
+    return HOT_TEAMS.has(h)||HOT_TEAMS.has(a);
+  }
+  
   // Format match time - handle both ISO and date-only formats
   function fmtTime(t){
     if(!t)return '';
@@ -376,7 +391,7 @@ function render(){
     else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div>';
     // Add time display
     const timeEl=row.querySelector('.mc-info');
-    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span></div>';
+    if(timeEl)timeEl.innerHTML='<span class="lb">'+(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span></div>';
     row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
     ml.appendChild(row);
     // Auto-select this match
