@@ -161,15 +161,21 @@
 <script>
 const LG=[
   {k:'wc',id:1,l:'世界杯',f:'🌍'},{k:'epl',id:39,l:'英超',f:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},{k:'la',id:140,l:'西甲',f:'🇪🇸'},
-  {k:'sa',id:135,l:'意甲',f:'🇮🇹'},{k:'bl',id:78,l:'德甲',f:'🇩🇪'},{k:'l1',id:61,l:'法甲',f:'🇫🇷'},
+  {k:'sa',id:135,l:'意甲',f:'🇮🇹'},{k:'bl',id:78,l:'德甲',f:'🇩🇪'},
 ];
+const LG_MORE=[
+  {k:'l1',id:61,l:'法甲',f:'🇫🇷'},{k:'csl',id:41,l:'中超',f:'🇨🇳'},
+  {k:'j1',id:98,l:'J1联赛',f:'🇯🇵'},{k:'k1',id:292,l:'K1联赛',f:'🇰🇷'},
+  {k:'copa',id:1,l:'美洲杯',f:'🏆'},
+];
+const ALL_LEAGUES=[...LG,...LG_MORE];
 const st={leagues:new Set(),picks:new Set(),matches:[]};
 
 // Load saved preferences
 function loadPrefs(){
   try{
     const saved=JSON.parse(localStorage.getItem('k38_leagues')||'["wc"]');
-    saved.forEach(k=>{if(LG.find(l=>l.k===k))st.leagues.add(k)});
+    saved.forEach(k=>{if(ALL_LEAGUES.find(l=>l.k===k))st.leagues.add(k)});
   }catch(e){st.leagues.add('wc')}
   if(!st.leagues.size)st.leagues.add('wc');
 }
@@ -224,23 +230,47 @@ function init(){
   if(tzEl)tzEl.textContent=getTZ();
   startClock();
   const tg=document.getElementById('tags');
-  LG.forEach((l,i)=>{const e=document.createElement('span');e.className='tag'+(st.leagues.has(l.k)?' sel':'');e.innerHTML=l.f+'&nbsp;'+l.l;
-    e.onclick=()=>{
-      e.classList.toggle('sel');
-      if(e.classList.contains('sel'))st.leagues.add(l.k);else st.leagues.delete(l.k);
-      if(!st.leagues.size){st.leagues.add('wc');document.querySelector('.tag').classList.add('sel')};
-      // Update 全选 button state
-      const allBtn=document.querySelector('.tag:last-child');
-      if(st.leagues.size===LG.length){allBtn.classList.add('sel');allBtn.textContent='✓ 全选'}
-      else{allBtn.classList.remove('sel');allBtn.textContent='全选'}
-      savePrefs();debounceLoad()
-    };tg.appendChild(e)});
-  // 全选按钮
-  const allBtn=document.createElement('span');allBtn.className='tag';allBtn.textContent='✓ 全选';
-  allBtn.onclick=()=>{const allSel=!allBtn.classList.contains('sel');LG.forEach(l=>{if(allSel)st.leagues.add(l.k);else st.leagues.clear()});document.querySelectorAll('.tag').forEach(t=>t.classList.toggle('sel',allSel));allBtn.classList.toggle('sel');allBtn.textContent=allSel?'✓ 全选':'全选';savePrefs();debounceLoad()};
-  tg.appendChild(allBtn);
-  // 全选初始状态
-  if(st.leagues.size===LG.length){allBtn.classList.add('sel');allBtn.textContent='✓ 全选'}
+  let _showMore=false;
+  
+  function renderTags(){
+    tg.innerHTML='';
+    const activeLeagues=_showMore?ALL_LEAGUES:LG;
+    activeLeagues.forEach(l=>{
+      const e=document.createElement('span');e.className='tag'+(st.leagues.has(l.k)?' sel':'');
+      e.innerHTML=l.f+'&nbsp;'+l.l;
+      e.onclick=()=>toggleOne(l.k);
+      tg.appendChild(e);
+    });
+    // 更多/收起按钮
+    if(!_showMore){
+      const moreBtn=document.createElement('span');moreBtn.className='tag';moreBtn.textContent='更多 ▶';
+      moreBtn.onclick=()=>{_showMore=true;renderTags()};
+      tg.appendChild(moreBtn);
+    } else {
+      // 全选按钮
+      const allSel=st.leagues.size===ALL_LEAGUES.length;
+      const allBtn=document.createElement('span');allBtn.className='tag'+(allSel?' sel':'');
+      allBtn.textContent=allSel?'✓ 全选':'全选';
+      allBtn.onclick=()=>{
+        if(st.leagues.size===ALL_LEAGUES.length)st.leagues.clear();
+        else ALL_LEAGUES.forEach(l=>st.leagues.add(l.k));
+        savePrefs();renderTags();debounceLoad();
+      };
+      tg.appendChild(allBtn);
+      // 收起按钮
+      const foldBtn=document.createElement('span');foldBtn.className='tag';foldBtn.textContent='▲ 收起';
+      foldBtn.onclick=()=>{_showMore=false;renderTags()};
+      tg.appendChild(foldBtn);
+    }
+  }
+  
+  function toggleOne(k){
+    if(st.leagues.has(k))st.leagues.delete(k);else st.leagues.add(k);
+    if(!st.leagues.size){st.leagues.add('wc')}
+    savePrefs();renderTags();debounceLoad();
+  }
+  
+  renderTags();
   [{l:'今天',d:0},{l:'3天',d:2},{l:'5天',d:4},{l:'7天',d:6}].forEach(r=>{const e=document.createElement('div');e.className='date';e.innerHTML=r.l+'<span class="cnt" style="font-size:8px;color:#6a5a80">'+fmtDateLabel(r.d)+'</span>';
     e.onclick=()=>{document.querySelectorAll('.date').forEach(b=>b.classList.remove('sel'));e.classList.add('sel');load(r)};document.getElementById('dates').appendChild(e)});
   document.querySelector('.date').click();
