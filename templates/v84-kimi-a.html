@@ -8,12 +8,19 @@
   *{margin:0;padding:0;box-sizing:border-box}
   body{background:#0d0f14;color:#e8e4f0;font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','SF Pro',sans-serif;padding:24px 14px 110px;max-width:480px;margin:0 auto;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative}
   
-  /* 足球场SVG背景 - 极淡线条 */
-  body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-2;background:radial-gradient(ellipse at 50% 50%,#0d1a0d 0%,#0a120a 100%)}
+  /* 暗色球场氛围背景 - 聚光灯+草地 */
+  body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-2;
+    background:
+      /* 聚光灯效果 */
+      radial-gradient(ellipse 60% 30% at 30% 0%,rgba(255,255,240,.04) 0%,transparent 100%),
+      radial-gradient(ellipse 60% 30% at 70% 0%,rgba(255,255,240,.04) 0%,transparent 100%),
+      radial-gradient(ellipse 80% 20% at 50% 0%,rgba(200,220,255,.03) 0%,transparent 100%),
+      /* 深色草地 */
+      linear-gradient(180deg,#0a140a 0%,#0d1a0d 50%,#0a120a 100%)}
   body::after{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='g' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Crect width='40' height='40' fill='%23122a12'/%3E%3Crect width='20' height='40' fill='%23103010'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)' opacity='.35'/%3E%3Crect x='5%25' y='2%25' width='90%25' height='96%25' fill='none' stroke='rgba(60,140,60,.12)' stroke-width='2'/%3E%3Cline x1='50%25' y1='2%25' x2='50%25' y2='98%25' stroke='rgba(60,140,60,.08)' stroke-width='1.5'/%3E%3Ccircle cx='50%25' cy='50%25' r='12%25' fill='none' stroke='rgba(60,140,60,.08)' stroke-width='1.5'/%3E%3Ccircle cx='50%25' cy='50%25' r='2' fill='rgba(60,140,60,.08)'/%3E%3Crect x='35%25' y='2%25' width='30%25' height='18%25' fill='none' stroke='rgba(60,140,60,.1)' stroke-width='1.5'/%3E%3Crect x='42%25' y='2%25' width='16%25' height='8%25' fill='none' stroke='rgba(60,140,60,.08)' stroke-width='1'/%3E%3Crect x='35%25' y='80%25' width='30%25' height='18%25' fill='none' stroke='rgba(60,140,60,.1)' stroke-width='1.5'/%3E%3Crect x='42%25' y='90%25' width='16%25' height='8%25' fill='none' stroke='rgba(60,140,60,.08)' stroke-width='1'/%3E%3C/svg%3E");
-    background-size:cover;background-position:center;background-repeat:no-repeat;
-    pointer-events:none;opacity:.5}
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='g' width='40' height='40' patternUnits='userSpaceOnUse'%3E%3Crect width='40' height='40' fill='%23122a12'/%3E%3Crect width='20' height='40' fill='%23103010'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23g)' opacity='.2'/%3E%3Crect x='5%25' y='2%25' width='90%25' height='96%25' fill='none' stroke='rgba(80,180,80,.08)' stroke-width='2'/%3E%3Cline x1='50%25' y1='2%25' x2='50%25' y2='98%25' stroke='rgba(80,180,80,.05)' stroke-width='1.5'/%3E%3Ccircle cx='50%25' cy='50%25' r='12%25' fill='none' stroke='rgba(80,180,80,.05)' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-size:cover;background-position:center;
+    pointer-events:none;opacity:.4}
   
   .app-wrap{position:relative;z-index:0}
   h1{font-size:18px;font-weight:700;margin-bottom:20px;color:#c8b8e8;letter-spacing:-.3px;text-align:center}
@@ -123,7 +130,7 @@
 <div class="tags" id="tags"></div>
 <div class="dates" id="dates"></div>
 <div class="ld" id="ld">加载中</div>
-<div class="legend" id="legend"><div class="ll"><span>🤖 AI 推荐</span><span class="t" id="tzDisplay">UTC+8</span></div><div class="lr"><span id="timeDisplay">--:--</span><span>|</span><span>⚡ 越高越可靠</span></div></div>
+<div class="legend" id="legend"><div class="ll"><span>🤖 AI 推荐</span><span class="t" id="tzDisplay">UTC+8</span></div><div class="lr"><span id="timeDisplay">--:--</span><span>|</span><span>⚡ 越多越可靠</span></div></div>
 <div class="ml" id="ml"></div>
 
 <div class="bb" id="bb">
@@ -286,6 +293,14 @@ function render(){
   const seen=new Set();
   st.matches=st.matches.filter(m=>{const key=m.id;if(seen.has(key))return false;seen.add(key);return true});
   
+  // Lightning scoring: more bolts = more reliable
+  function getLightning(conf){
+    if(conf>=90)return '<span style="color:#ffd700">⚡⚡⚡</span>';
+    if(conf>=80)return '<span style="color:#ffd700">⚡⚡</span>';
+    if(conf>=60)return '<span style="color:#d4a060">⚡</span>';
+    return '<span style="color:#3c3050">⚡</span>';
+  }
+  
   // Format match time - handle both ISO and date-only formats
   function fmtTime(t){
     if(!t)return '';
@@ -331,7 +346,7 @@ function render(){
     else row.innerHTML='<div class="mc-row"><div class="ck" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t"><span class="mc-t-flag">'+hF+'</span><span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t"><span class="mc-t-flag">'+aF+'</span><span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info"><div class="vl">'+m.confidence+'%</div></div></div>';
     // Add time display
     const timeEl=row.querySelector('.mc-info');
-    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:9px">⚡</span></div>';
+    if(timeEl)timeEl.innerHTML='<span class="lb">'+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span></div>';
     row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
     ml.appendChild(row);
     // Auto-select this match
