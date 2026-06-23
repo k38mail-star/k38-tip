@@ -211,9 +211,8 @@ def build_candidate_results(limit=100, date_from=None, date_to=None, league_ids=
                     odds = get_odds_for_fixture(m["home_team"], m["away_team"], sport_key=sport_key)
                     if odds and odds.get("home_odds"):
                         ev = calculate_ev(
-                            max(hw, aw), min(hw, aw),
-                            odds.get("home_odds") if hw >= aw else odds.get("away_odds"),
-                            odds.get("away_odds") if hw >= aw else odds.get("home_odds")
+                            max(hw, aw),
+                            odds.get("home_odds") if hw >= aw else odds.get("away_odds")
                         )
                         odds_data = {
                             "home_odds": odds.get("home_odds"),

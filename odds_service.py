@@ -60,15 +60,12 @@ def get_odds_for_fixture(home_team: str, away_team: str, sport_key: str = "socce
         return None
 
 
-def calculate_ev(pred_win_prob: float, pred_lose_prob: float,
-                 win_odds: float, lose_odds: float) -> dict | None:
+def calculate_ev(pred_win_prob: float, win_odds: float) -> dict | None:
     """计算期望价值 (EV) 和 Kelly 分数。
 
     Args:
         pred_win_prob: 模型预测的获胜概率 (0-1)
-        pred_lose_prob: 模型预测的失败概率 (0-1)
         win_odds: 获胜的赔率 (decimal)
-        lose_odds: 失败的赔率 (decimal)
 
     Returns:
         dict with edge_pct, ev_pct, kelly_fraction, or None
