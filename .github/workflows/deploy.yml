@@ -16,6 +16,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /opt/k38-tip
+            git stash
             git pull origin main
             pip3 install -q flask numpy 2>/dev/null || true
             systemctl restart k38-tip
