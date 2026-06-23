@@ -484,6 +484,53 @@ function load(r){
     if(activeDate){const cnt=activeDate.querySelector('.cnt');if(cnt)cnt.textContent=(d.matches?.length||0)+'场'}
   }).catch(e=>{cleanup();if(e.name==='AbortError')return;ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">加载失败</div>';ml.classList.add('s')});
 }
+
+// R2-27: Move fmtTime outside render() for performance
+function fmtTime(t){
+  if(!t)return '';
+  let dStr=t;
+  // Handle ISO format: 2026-06-22T17:00:00+00:00 or 2026-06-22T17:00:00Z
+  dStr=dStr.replace('T',' ').replace(/\+00:00$/,'').replace(/Z$/,'').replace(/\+08:00$/,'').trim();
+  // If only date (no time), show friendly date
+  if(dStr.length<=10){
+    const parts=dStr.split('-');
+    if(parts.length===3)return parseInt(parts[1])+'月'+parseInt(parts[2])+'日';
+    return dStr;
+  }
+  // Parse as local time
+  const dt=new Date(dStr+' UTC+8');
+  if(isNaN(dt.getTime())){
+    // Fallback: try without timezone
+    const dt2=new Date(dStr);
+    if(isNaN(dt2.getTime()))return dStr.substring(5,10);
+    return fmtDateFromDate(dt2);
+  }
+  return fmtDateFromDate(dt);
+}
+function fmtDateFromDate(dt){
+  const now=new Date();
+  const diff=Math.round((dt-now)/86400000);
+  const h=String(dt.getHours()).padStart(2,'0');
+  const m=String(dt.getMinutes()).padStart(2,'0');
+  const md=(dt.getMonth()+1)+'月'+dt.getDate()+'日';
+  if(diff===0)return '今晚 '+h+':'+m;
+  if(diff===1)return '明天 '+h+':'+m;
+  if(diff>0&&diff<=7)return md+' '+h+':'+m;
+  return md;
+}
+
+// P2-15: Generate recommendation reason based on xG difference
+function getReasonText(m){
+  const hxg=m.home_xg||0,axg=m.away_xg||0;
+  const diff=Math.abs(hxg-axg);
+  const p=m.prediction;
+  if(diff>=1.5)return '实力差距明显';
+  if(diff>=1.0)return '进攻优势较大';
+  if(diff>=0.5)return '近期状态占优';
+  if(p==='平局')return '双方势均力敌';
+  return '';
+}
+
 function render(){
   const ml=document.getElementById('ml');ml.innerHTML='';const lg=document.getElementById('legend');const bb=document.getElementById('bb');
   const searchWrap=document.getElementById('searchWrap');
@@ -540,52 +587,6 @@ function render(){
     const h=m.home_cn||m.home||'';
     const a=m.away_cn||m.away||'';
     return HOT_TEAMS.has(h)||HOT_TEAMS.has(a);
-  }
-  
-  // Format match time - handle both ISO and date-only formats
-  function fmtTime(t){
-    if(!t)return '';
-    let dStr=t;
-    // Handle ISO format: 2026-06-22T17:00:00+00:00 or 2026-06-22T17:00:00Z
-    dStr=dStr.replace('T',' ').replace(/\+00:00$/,'').replace(/Z$/,'').replace(/\+08:00$/,'').trim();
-    // If only date (no time), show friendly date
-    if(dStr.length<=10){
-      const parts=dStr.split('-');
-      if(parts.length===3)return parseInt(parts[1])+'月'+parseInt(parts[2])+'日';
-      return dStr;
-    }
-    // Parse as local time
-    const dt=new Date(dStr+' UTC+8');
-    if(isNaN(dt.getTime())){
-      // Fallback: try without timezone
-      const dt2=new Date(dStr);
-      if(isNaN(dt2.getTime()))return dStr.substring(5,10);
-      return fmtDateFromDate(dt2);
-    }
-    return fmtDateFromDate(dt);
-  }
-  function fmtDateFromDate(dt){
-    const now=new Date();
-    const diff=Math.round((dt-now)/86400000);
-    const h=String(dt.getHours()).padStart(2,'0');
-    const m=String(dt.getMinutes()).padStart(2,'0');
-    const md=(dt.getMonth()+1)+'月'+dt.getDate()+'日';
-    if(diff===0)return '今晚 '+h+':'+m;
-    if(diff===1)return '明天 '+h+':'+m;
-    if(diff>0&&diff<=7)return md+' '+h+':'+m;
-    return md;
-  }
-
-  // P2-15: Generate recommendation reason based on xG difference
-  function getReasonText(m){
-    const hxg=m.home_xg||0,axg=m.away_xg||0;
-    const diff=Math.abs(hxg-axg);
-    const p=m.prediction;
-    if(diff>=1.5)return '实力差距明显';
-    if(diff>=1.0)return '进攻优势较大';
-    if(diff>=0.5)return '近期状态占优';
-    if(p==='平局')return '双方势均力敌';
-    return '';
   }
 
   displayMatches.forEach((m,i)=>{
