@@ -96,6 +96,8 @@
   .bi-info{font-size:11px;color:#8b7fa0;display:flex;gap:12px;align-items:center}
   .bi-info .num{color:#a080d8;font-weight:700;font-size:14px}
   .bi-info .tag-c{background:rgba(124,92,191,.12);padding:2px 8px;border-radius:4px;color:#a080d8;font-size:10px}
+  .bi-info .stats-link{color:#8b7fa0;font-size:11px;cursor:pointer;padding:2px 6px;border-radius:4px;transition:.15s}
+  .bi-info .stats-link:hover{color:#a080d8;background:rgba(124,92,191,.1)}
 
   /* Football button */
   .fb-wrap{position:relative;display:flex;align-items:center;justify-content:center}
@@ -195,6 +197,7 @@
     <div class="bi-info" id="infoBar">
       <span>已选 <span class="num" id="sc">0</span> 场</span>
       <span class="tag-c" id="comboTag">—</span>
+      <span class="stats-link" id="statsLink">📊 战绩</span>
     </div>
     <div class="fb-wrap">
       <button class="fb" id="gb" disabled aria-label="生成智能串关组合">
@@ -216,6 +219,11 @@
     <span class="ck-mark">✓</span>
   </div>
   <div class="anim-result" id="animResult"></div>
+</div>
+
+<!-- P2-12: Bet Record Overlay -->
+<div class="anim-overlay" id="statsOverlay" style="display:none">
+  <div class="anim-result s" id="statsResult" style="animation:none;opacity:1;transform:none"></div>
 </div>
 
 <script>
@@ -671,6 +679,8 @@ function showResult(n,el){
     }
     html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
     el.innerHTML=html;
+    // P2-12: Record simulated bet
+    if(combos.length>0 && window.recordBet) window.recordBet(parlay, combos);
   }).catch(e=>{
     let msg='网络连接失败',detail='请检查网络后重试';
     if(e.message&&e.message.includes('Not enough'))      {msg='选择场次不足';detail='请至少选择'+n+'场比赛';}
@@ -766,6 +776,61 @@ function closeAnim(){
   document.getElementById('animResult').classList.remove('s');
   document.getElementById('animOverlay').classList.remove('s');
 }
+
+// P2-12: Simulated bet record (virtual 2 yuan tracking)
+(function(){
+  const KEY='k38_bets';
+  function getBets(){try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}}
+  function saveBets(bets){localStorage.setItem(KEY,JSON.stringify(bets.slice(-50)))}
+
+  // Record a bet when result is generated
+  window.recordBet=function(type,combos){
+    const bets=getBets();
+    bets.push({
+      id:Date.now(),
+      ts:new Date().toISOString(),
+      type:type,
+      matches:combos.slice(0,6).map(m=>({home:m.home,away:m.away,prediction:m.prediction})),
+      hit_pct:combos[0]&&combos[0].hit_pct||0,
+      stake:2,
+      status:'pending' // pending | won | lost
+    });
+    saveBets(bets);
+  };
+
+  // Show stats overlay
+  document.getElementById('statsLink').onclick=function(){
+    const bets=getBets();
+    const overlay=document.getElementById('statsOverlay');
+    const result=document.getElementById('statsResult');
+    overlay.style.display='flex';
+    const won=bets.filter(b=>b.status==='won').length;
+    const lost=bets.filter(b=>b.status==='lost').length;
+    const pending=bets.filter(b=>b.status==='pending').length;
+    const total=bets.length;
+    const totalStake=total*2;
+    const winRate=total>0?Math.round(won/Math.max(won+lost,1)*100):0;
+    let html='<div class="ar-title">📊 模拟投注战绩</div>';
+    html+='<div class="ar-card"><div class="ar-row"><span>总投注</span><span class="v">'+total+'注 · ¥'+totalStake+'</span></div>';
+    html+='<div class="ar-row"><span>胜/负/待定</span><span class="v"><span style="color:#4caf50">'+won+'胜</span> / <span style="color:#f44336">'+lost+'负</span> / '+pending+'待</span></div>';
+    html+='<div class="ar-row"><span>命中率</span><span class="hit">'+winRate+'%</span></div></div>';
+    if(bets.length===0){
+      html+='<div class="ar-card" style="text-align:center;color:#8b7fa0;font-size:11px;padding:20px">还没有投注记录<br>生成串关后自动记录</div>';
+    } else {
+      html+='<div style="max-height:200px;overflow-y:auto">';
+      bets.slice(-10).reverse().forEach(b=>{
+        const statusIcon=b.status==='won'?'✅':b.status==='lost'?'❌':'⏳';
+        const teams=b.matches.map(m=>m.home+' vs '+m.away).join(', ');
+        html+='<div class="ar-card" style="padding:8px 10px"><div class="ar-row"><span style="font-size:10px">'+statusIcon+' '+b.type+'</span><span style="font-size:9px;color:#6a5a80">'+b.ts.slice(5,16).replace('T',' ')+'</span></div><div style="font-size:9px;color:#8b7fa0;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+teams+'</div></div>';
+      });
+      html+='</div>';
+    }
+    html+='<div class="ar-actions"><div class="ar-btn" onclick="document.getElementById(\'statsOverlay\').style.display=\'none\'">✕ 关闭</div><div class="ar-btn" onclick="if(confirm(\'清空所有记录？\')){localStorage.removeItem(\'k38_bets\');document.getElementById(\'statsOverlay\').style.display=\'none\'}">🗑 清空</div></div>';
+    result.innerHTML=html;
+  };
+  // Tap overlay to close
+  document.getElementById('statsOverlay').onclick=function(e){if(e.target===this)this.style.display='none'};
+})();
 
 // P1-10: Theme toggle
 (function(){
