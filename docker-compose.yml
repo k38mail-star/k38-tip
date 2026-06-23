@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    container_name: k38-app
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - K38_DB_PATH=/app/data/k38.db
+
+  nginx:
+    image: nginx:alpine
+    container_name: k38-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./static:/opt/k38/static:ro
+    depends_on:
+      - app
