@@ -239,6 +239,7 @@ def build_candidate_results(limit=100, date_from=None, date_to=None, league_ids=
             "league": m.get("league_name", ""),
             "league_id": m["league_id"],
             "winner": winner,
+            "prediction": {"home": "主胜", "away": "客胜", "draw": "平局"}.get(winner, ""),
             "confidence": confidence,
             "win_prob": pred["win_prob"],
             "top_scores": pred.get("top_scores", []),
