@@ -651,13 +651,13 @@ function render(){
     else bd='<div class="mc-rec '+rc+'">'+ai+' 🏆 '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     const row=document.createElement('div');row.className='mc';
     const lt=getLightning(m.confidence);
-    const st=m.confidence>=75?'<span class="sure-tag">🟢稳胆</span>':'';
+    const sureTag=m.confidence>=75?'<span class="sure-tag">🟢稳胆</span>':'';
     const reasonTxt=getReasonText(m);
     row.innerHTML=
       '<div class="mc-row">'+
         '<div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div>'+
         '<div class="mc-teams"><div class="mc-t">'+hF+mkName(hCN,hEN)+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t">'+aF+mkName(aCN,aEN)+(ia?bd:'')+'</div></div>'+
-        '<div class="mc-sidebar">'+st+(lt?'<div class="mc-lt">'+lt+'</div>':'')+'<div class="mc-pct">胜率 <span class="vl">'+m.confidence+'%</span></div></div>'+
+        '<div class="mc-sidebar">'+sureTag+(lt?'<div class="mc-lt">'+lt+'</div>':'')+'<div class="mc-pct">胜率 <span class="vl">'+m.confidence+'%</span></div></div>'+
       '</div>'+
       (id?'<div style="text-align:center;margin-top:4px">'+bd+'</div>':'')+
       '<div class="mc-time-row"><span>'+(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date)+'</span></div>'+
