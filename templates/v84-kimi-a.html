@@ -553,9 +553,15 @@ function render(){
   if(!st.matches.length){searchWrap.style.display='none';ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
   searchWrap.style.display='';ml.classList.add('s');lg.classList.add('s');bb.classList.add('s');
 
-  // Deduplicate BEFORE displayMatches (fix: moved up)
-  const seen=new Set();
-  st.matches=st.matches.filter(m=>{const key=m.id;if(seen.has(key))return false;seen.add(key);return true});
+  // Deduplicate BEFORE displayMatches by team name (handles EN/CN duplicates)
+  const seenTeams=new Set();
+  st.matches=st.matches.filter(m=>{
+    const h=m.home_cn||m.home||'', a=m.away_cn||m.away||'';
+    const key=h.toLowerCase().trim()+'|'+a.toLowerCase().trim();
+    if(seenTeams.has(key))return false;
+    seenTeams.add(key);
+    return true;
+  });
 
   // P1-9: Filter matches by search term
   let displayMatches=st.matches;
@@ -584,11 +590,6 @@ function render(){
     }
   }
   
-  // Deduplicate by fixture_id (keep first occurrence)
-  const seen=new Set();
-  st.matches=st.matches.filter(m=>{const key=m.id;if(seen.has(key))return false;seen.add(key);return true});
-  // Use filtered list for rendering
-  if(!st._searchTerm) displayMatches=st.matches;
   
   // Lightning scoring: more bolts = more reliable
   function getLightning(conf){
