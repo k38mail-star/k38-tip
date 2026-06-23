@@ -383,7 +383,7 @@ function init(){
           html+='</div>';
         });
       }
-      html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+      html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">🔗 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
       result.innerHTML=html;
     }).catch(e=>{
       result.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px">'+e.message+'</div><div class="ar-actions"><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
@@ -677,7 +677,7 @@ function showResult(n,el){
         html+='</div>';
       });
     }
-    html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+    html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">🔗 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
     el.innerHTML=html;
     // P2-12: Record simulated bet
     if(combos.length>0 && window.recordBet) window.recordBet(parlay, combos);
