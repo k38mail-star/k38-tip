@@ -374,6 +374,12 @@ function init(){
     if(ids.length<2){showToast('⚠️ 至少需要2场比赛');return}
     const overlay=document.getElementById('animOverlay');
     const result=document.getElementById('animResult');
+    const btn=this;
+    // R2-29: Show loading state
+    btn.disabled=true;
+    const origText=btn.textContent;
+    btn.textContent='⏳ 计算中...';
+    btn.style.opacity='0.6';
     overlay.classList.add('s');result.classList.add('s');
     result.innerHTML='<div style="text-align:center;padding:24px;color:#a080d8">🤖 AI正在枚举最优组合...</div>';
     const ac=new AbortController();const at=setTimeout(()=>ac.abort(),15000);
@@ -398,10 +404,14 @@ function init(){
       }
       html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">🔗 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
       result.innerHTML=html;
+      // R2-29: Restore button state
+      btn.disabled=false;btn.textContent=origText;btn.style.opacity='';
     }).catch(e=>{
       clearTimeout(at);
       const msg=e.name==='AbortError'?'计算超时，请减少场次后重试':e.message;
       result.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px">'+msg+'</div><div class="ar-actions"><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+      // R2-29: Restore button state
+      btn.disabled=false;btn.textContent=origText;btn.style.opacity='';
     });
   };
   document.getElementById('animOverlay').onclick=function(e){if(e.target===this){skipAndClose()}};
