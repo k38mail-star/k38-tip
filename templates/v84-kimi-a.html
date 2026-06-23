@@ -77,7 +77,8 @@
   .mc-teams{flex:1;display:flex;align-items:center;justify-content:space-between;gap:6px;min-width:0}
   .mc-t{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1;min-width:0}
   .mc-t-flag{font-size:22px;line-height:1}
-  .mc-t-name{font-size:14px;font-weight:500;color:#e8e4f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .mc-t-name{font-size:14px;font-weight:500;color:#e8e4f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.3}
+  .mc-en-name{font-size:9px;color:#6a5a80;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.2;margin-top:-1px}
   .mc-vs{font-size:11px;color:#6a5a80;flex-shrink:0;padding:0 6px;font-weight:600}
   .mc-rec{font-size:11px;font-weight:500;padding:4px 12px;border-radius:6px;white-space:nowrap;margin-top:3px;display:inline-flex;align-items:center;gap:4px}
   .mc-rec-home{background:rgba(124,92,191,.15);color:#a080d8}
@@ -611,15 +612,19 @@ function render(){
     const ed=m.odds&&m.odds.edge_pct;
     // P3-16: If flag is a URL, render as lazy-loaded image; otherwise emoji
     const mkFlag=(f)=>f&&f.startsWith('http')?'<img class="mc-t-flag" src="'+f+'" loading="lazy" width="20" height="20" alt="">':'<span class="mc-t-flag">'+(f||'⚽')+'</span>';
-    const hF=mkFlag(m.home_flag),aF=mkFlag(m.away_flag),hN=m.home_cn||m.home,aN=m.away_cn||m.away;
+    const hF=mkFlag(m.home_flag),aF=mkFlag(m.away_flag);
+    // Chinese name primary, English name as subtitle when different
+    const hCN=m.home_cn||m.home,aCN=m.away_cn||m.away;
+    const hEN=(m.home&&m.home!==hCN)?m.home:'',aEN=(m.away&&m.away!==aCN)?m.away:'';
+    const mkName=(cn,en)=>(en?'<span class=\"mc-t-name\">'+cn+'</span><span class=\"mc-en-name\">'+en+'</span>':'<span class=\"mc-t-name\">'+cn+'</span>');
     let rc=ia?'mc-rec-away':(id?'mc-rec-draw':'mc-rec-home'),ai='<span class="ai-tag">AI</span>',bd='';
     if(id)bd='<div class="mc-rec '+rc+'">'+ai+' ⚖️ '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     else bd='<div class="mc-rec '+rc+'">'+ai+' 🏆 '+p+(odds?' @'+odds:'')+(ed?' +'+ed+'%':'')+'</div>';
     const row=document.createElement('div');row.className='mc';
     // P2-14: 稳胆 tag for high confidence
     const sureTag=m.confidence>=75?'<span class="sure-tag">🟢稳胆</span>':'';
-    if(id)row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t">'+hF+'<span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t">'+aF+'<span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info">'+sureTag+'<div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
-    else row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t">'+hF+'<span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t">'+aF+'<span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info">'+sureTag+'<div class="vl">'+m.confidence+'%</div></div></div>';
+    if(id)row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t">'+hF+mkName(hCN,hEN)+'</div><div class="mc-vs">VS</div><div class="mc-t">'+aF+mkName(aCN,aEN)+'</div></div><div class="mc-info">'+sureTag+'<div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
+    else row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t">'+hF+mkName(hCN,hEN)+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t">'+aF+mkName(aCN,aEN)+(ia?bd:'')+'</div></div><div class="mc-info">'+sureTag+'<div class="vl">'+m.confidence+'%</div></div></div>';
     // Fix: Update .mc-info content WITHOUT overwriting sureTag and prediction badge
     const timeEl=row.querySelector('.mc-info');
     const vlEl=timeEl?.querySelector('.vl');

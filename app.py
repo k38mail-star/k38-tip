@@ -3,6 +3,7 @@ import os, json, sqlite3, math, itertools, time
 from collections import OrderedDict
 from contextlib import contextmanager
 from odds_service import get_odds_for_fixture, calculate_ev
+from team_names import TEAM_CN_MAP
 from flask import Flask, render_template, jsonify, request
 from engine.poisson import PoissonModel
 from engine.monte_carlo import MonteCarlo
@@ -231,8 +232,8 @@ def build_candidate_results(limit=100, date_from=None, date_to=None, league_ids=
             "id": m["fixture_id"],
             "home": m["home_team"],
             "away": m["away_team"],
-            "home_cn": m.get("home_team_cn") or m["home_team"],
-            "away_cn": m.get("away_team_cn") or m["away_team"],
+            "home_cn": m.get("home_team_cn") or TEAM_CN_MAP.get(m["home_team"], m["home_team"]),
+            "away_cn": m.get("away_team_cn") or TEAM_CN_MAP.get(m["away_team"], m["away_team"]),
             "home_flag": m.get("home_flag", ""),
             "away_flag": m.get("away_flag", ""),
             "date": m["match_date"],
