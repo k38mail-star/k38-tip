@@ -53,8 +53,7 @@
   .date:hover{border-color:#5c4090}
   .date.sel{border-color:#7c5cbf;color:#c8b8e8;background:linear-gradient(135deg,#1e1440,#241850);box-shadow:0 0 16px rgba(124,92,191,.2)}
   .date .cnt{font-size:10px;color:#6a5a80;margin-top:2px;display:block}
-  .search-wrap{position:relative;margin-bottom:16px;display:none}
-  .search-wrap.s{display:block}
+  .search-wrap{position:relative;margin-bottom:10px}
   #searchInput{width:100%;padding:12px 40px 12px 14px;border-radius:10px;border:1px solid #2a2040;background:linear-gradient(135deg,#161122,#1a1428);color:#e8e4f0;font-size:14px;outline:none;transition:.15s;min-height:44px}
   #searchInput:focus{border-color:#5c4090}
   #searchInput::placeholder{color:#6a5a80}
@@ -476,8 +475,8 @@ function load(r){
 function render(){
   const ml=document.getElementById('ml');ml.innerHTML='';const lg=document.getElementById('legend');const bb=document.getElementById('bb');
   const searchWrap=document.getElementById('searchWrap');
-  if(!st.matches.length){searchWrap.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
-  searchWrap.classList.add('s');ml.classList.add('s');lg.classList.add('s');bb.classList.add('s');
+  if(!st.matches.length){searchWrap.style.display='none';ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
+  searchWrap.style.display='';ml.classList.add('s');lg.classList.add('s');bb.classList.add('s');
 
   // Deduplicate BEFORE displayMatches (fix: moved up)
   const seen=new Set();
