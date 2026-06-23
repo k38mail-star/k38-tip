@@ -1,5 +1,5 @@
 """K38 Tip - Football Betting Recommendation Engine (Updated Flow)"""
-import os, json, sqlite3, math, itertools, time
+import os, json, sqlite3, math, itertools, time, subprocess
 from collections import OrderedDict
 from contextlib import contextmanager
 from odds_service import get_odds_for_fixture, calculate_ev
@@ -9,7 +9,8 @@ from engine.poisson import PoissonModel
 from engine.monte_carlo import MonteCarlo
 
 app = Flask(__name__)
-DB = os.getenv("K38_DB", "/opt/k38-football/football.db")
+VERSION = "v1.1.0"  # 波波鸡版本号 - 每次更新递增
+DB = "/opt/k38-football/football.db"
 
 
 # ---------------------------------------------------------------------------
@@ -488,6 +489,16 @@ def predict_match(fixture_id):
     sim = monte.simulate_match(pred["home_xg"], pred["away_xg"])
     pred["monte_carlo"] = sim
     return jsonify(pred)
+
+
+@app.route("/api/version")
+def api_version():
+    commit = ""
+    try:
+        import subprocess
+        commit = subprocess.run(["git","log","--oneline","-1"], capture_output=True, text=True, cwd="/opt/k38-tip").stdout.strip()
+    except: pass
+    return jsonify({"version": VERSION, "commit": commit, "server": "新加坡"})
 
 
 # ---------------------------------------------------------------------------
