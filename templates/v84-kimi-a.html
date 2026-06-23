@@ -412,10 +412,20 @@ function init(){
   searchInput.addEventListener('input',function(){
     st._searchTerm=this.value.trim().toLowerCase();
     searchClear.style.display=st._searchTerm?'block':'none';
+    // R2-23: Clear league visual selection when searching
+    if(st._searchTerm){
+      document.querySelectorAll('#legend .tag').forEach(t=>t.classList.remove('sel'));
+    }
     render();
   });
   searchClear.addEventListener('click',function(){
-    searchInput.value='';st._searchTerm='';searchClear.style.display='none';render();
+    searchInput.value='';st._searchTerm='';searchClear.style.display='none';
+    // R2-23: Restore league selections after clearing search
+    document.querySelectorAll('#legend .tag').forEach(t=>{
+      const k=t.dataset.k;
+      if(k&&st.leagues.has(k))t.classList.add('sel');
+    });
+    render();
   });
 }
 
