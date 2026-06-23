@@ -620,9 +620,13 @@ function render(){
     const sureTag=m.confidence>=75?'<span class="sure-tag">🟢稳胆</span>':'';
     if(id)row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t">'+hF+'<span class="mc-t-name">'+hN+'</span></div><div class="mc-vs">VS</div><div class="mc-t">'+aF+'<span class="mc-t-name">'+aN+'</span></div></div><div class="mc-info">'+sureTag+'<div class="vl">'+m.confidence+'%</div></div></div><div style="text-align:center;margin-top:4px">'+bd+'</div>';
     else row.innerHTML='<div class="mc-row"><div class="ck" role="checkbox" aria-checked="false" onclick="event.stopPropagation();togCK(this,'+m.id+')"></div><div class="mc-teams"><div class="mc-t">'+hF+'<span class="mc-t-name">'+hN+'</span>'+(ih?bd:'')+'</div><div class="mc-vs">VS</div><div class="mc-t">'+aF+'<span class="mc-t-name">'+aN+'</span>'+(ia?bd:'')+'</div></div><div class="mc-info">'+sureTag+'<div class="vl">'+m.confidence+'%</div></div></div>';
-    // Add time display
+    // Fix: Update .mc-info content WITHOUT overwriting sureTag and prediction badge
     const timeEl=row.querySelector('.mc-info');
-    if(timeEl)timeEl.innerHTML='<span class="lb">'+(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span><span class="lb" style="font-size:7px;display:block;margin-top:0">胜率</span></div>';
+    const vlEl=timeEl?.querySelector('.vl');
+    if(vlEl)vlEl.innerHTML=m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span><span class="lb" style="font-size:7px;display:block;margin-top:0">胜率</span>';
+    // Prepend time label
+    const lbEl=document.createElement('span');lbEl.className='lb';lbEl.textContent=(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date);
+    if(timeEl)timeEl.insertBefore(lbEl,timeEl.firstChild);
     // P2-15: One-line recommendation reason
     const reason=getReasonText(m);
     if(reason){const reasonEl=document.createElement('div');reasonEl.className='mc-reason';reasonEl.textContent=reason;row.appendChild(reasonEl)}
