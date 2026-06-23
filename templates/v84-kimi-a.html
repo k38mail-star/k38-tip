@@ -53,6 +53,13 @@
   .date:hover{border-color:#5c4090}
   .date.sel{border-color:#7c5cbf;color:#c8b8e8;background:linear-gradient(135deg,#1e1440,#241850);box-shadow:0 0 16px rgba(124,92,191,.2)}
   .date .cnt{font-size:9px;color:#6a5a80;margin-top:2px;display:block}
+  .search-wrap{position:relative;margin-bottom:16px;display:none}
+  .search-wrap.s{display:block}
+  #searchInput{width:100%;padding:8px 32px 8px 12px;border-radius:8px;border:1px solid #2a2040;background:linear-gradient(135deg,#161122,#1a1428);color:#e8e4f0;font-size:12px;outline:none;transition:.15s}
+  #searchInput:focus{border-color:#5c4090}
+  #searchInput::placeholder{color:#6a5a80}
+  .search-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#6a5a80;font-size:14px;cursor:pointer;padding:4px 8px;border-radius:4px}
+  .search-clear:hover{color:#a080d8;background:rgba(124,92,191,.1)}
   .ld{display:none;text-align:center;padding:32px;color:#6a5a80;font-size:12px}
   .ld.s{display:block}
   .legend{display:none;font-size:9px;color:#8b7fa0;padding:4px 2px 6px;border-bottom:1px solid #2a2040;margin-bottom:6px;justify-content:space-between}
@@ -156,6 +163,7 @@
 </div>
 <div class="tags" id="tags"></div>
 <div class="dates" id="dates"></div>
+<div class="search-wrap" id="searchWrap"><input type="text" id="searchInput" placeholder="🔍 搜索球队..." autocomplete="off"><button id="searchClear" class="search-clear" style="display:none">✕</button></div>
 <div class="ld" id="ld">加载中</div>
 <div class="legend" id="legend"><div class="ll"><span>🤖 波波机</span><span class="t" id="tzDisplay">UTC+8</span></div><div class="lr"><span id="timeDisplay">--:--</span><span>|</span><span>⚡ 越多越可靠</span></div></div>
 <div class="ml" id="ml"></div>
@@ -314,6 +322,19 @@ function init(){
   document.getElementById('gb').onclick=startAnim;
   document.getElementById('animOverlay').onclick=function(e){if(e.target===this){skipAndClose()}};
   document.getElementById('animOverlay').addEventListener('dblclick',function(e){e.stopPropagation();skipAndClose()});
+
+  // P1-9: Search team filter
+  const searchInput=document.getElementById('searchInput');
+  const searchClear=document.getElementById('searchClear');
+  st._searchTerm='';
+  searchInput.addEventListener('input',function(){
+    st._searchTerm=this.value.trim().toLowerCase();
+    searchClear.style.display=st._searchTerm?'block':'none';
+    render();
+  });
+  searchClear.addEventListener('click',function(){
+    searchInput.value='';st._searchTerm='';searchClear.style.display='none';render();
+  });
 }
 
 let _animTimer=null;
@@ -371,29 +392,42 @@ function load(r){
 }
 function render(){
   const ml=document.getElementById('ml');ml.innerHTML='';const lg=document.getElementById('legend');const bb=document.getElementById('bb');
-  if(!st.matches.length){ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
-  ml.classList.add('s');lg.classList.add('s');bb.classList.add('s');
-  
+  const searchWrap=document.getElementById('searchWrap');
+  if(!st.matches.length){searchWrap.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">暂无推荐比赛<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">试试其他联赛或日期范围</span></div>';ml.classList.add('s');lg.classList.remove('s');bb.classList.remove('s');return}
+  searchWrap.classList.add('s');ml.classList.add('s');lg.classList.add('s');bb.classList.add('s');
+
+  // P1-9: Filter matches by search term
+  let displayMatches=st.matches;
+  if(st._searchTerm){
+    displayMatches=st.matches.filter(m=>{
+      const h=(m.home_cn||m.home||'').toLowerCase();
+      const a=(m.away_cn||m.away||'').toLowerCase();
+      return h.includes(st._searchTerm)||a.includes(st._searchTerm);
+    });
+  }
+
   // Pagination: show 15 initially
   let _pageSize=15;
   let _shown=0;
   
   function showMore(){
     const items=ml.querySelectorAll('.mc');
-    for(let i=_shown;i<_shown+_pageSize&&i<st.matches.length;i++){
+    for(let i=_shown;i<_shown+_pageSize&&i<displayMatches.length;i++){
       if(items[i])items[i].style.display='';
     }
-    _shown=Math.min(_shown+_pageSize,st.matches.length);
+    _shown=Math.min(_shown+_pageSize,displayMatches.length);
     const moreBtn=ml.querySelector('.more-btn');
     if(moreBtn){
-      if(_shown>=st.matches.length)moreBtn.style.display='none';
-      else moreBtn.textContent='显示更多 ('+(st.matches.length-_shown)+'场)';
+      if(_shown>=displayMatches.length)moreBtn.style.display='none';
+      else moreBtn.textContent='显示更多 ('+(displayMatches.length-_shown)+'场)';
     }
   }
   
   // Deduplicate by fixture_id (keep first occurrence)
   const seen=new Set();
   st.matches=st.matches.filter(m=>{const key=m.id;if(seen.has(key))return false;seen.add(key);return true});
+  // Use filtered list for rendering
+  if(!st._searchTerm) displayMatches=st.matches;
   
   // Lightning scoring: more bolts = more reliable
   function getLightning(conf){
@@ -444,7 +478,7 @@ function render(){
     return md;
   }
   
-  st.matches.forEach((m,i)=>{
+  displayMatches.forEach((m,i)=>{
     const p=m.prediction,ih=p==='主胜',ia=p==='客胜',id=p==='平局';let odds=null;if(m.odds){if(ih)odds=m.odds.home_odds;else if(ia)odds=m.odds.away_odds;else if(id)odds=m.odds.draw_odds}
     const ed=m.odds&&m.odds.edge_pct,hF=m.home_flag||'⚽',aF=m.away_flag||'⚽',hN=m.home_cn||m.home,aN=m.away_cn||m.away;
     let rc=ia?'mc-rec-away':(id?'mc-rec-draw':'mc-rec-home'),ai='<span class="ai-tag">AI</span>',bd='';
@@ -474,7 +508,7 @@ function render(){
     const moreDiv=document.createElement('div');
     moreDiv.className='more-btn';
     moreDiv.style.cssText='text-align:center;padding:12px;font-size:11px;color:#8b7fa0;cursor:pointer;border:1px solid #2a2040;border-radius:8px;margin-top:4px';
-    moreDiv.textContent='显示更多 ('+(st.matches.length-_pageSize)+'场)';
+    moreDiv.textContent='显示更多 ('+(displayMatches.length-_pageSize)+'场)';
     moreDiv.onclick=showMore;
     ml.appendChild(moreDiv);
   }
