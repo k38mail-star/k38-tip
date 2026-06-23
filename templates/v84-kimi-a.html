@@ -375,7 +375,9 @@ function init(){
     const result=document.getElementById('animResult');
     overlay.classList.add('s');result.classList.add('s');
     result.innerHTML='<div style="text-align:center;padding:24px;color:#a080d8">🤖 AI正在枚举最优组合...</div>';
-    fetch('/api/generate-combos?type=auto&'+ids.map(id=>'ids='+id).join('&')).then(r=>{
+    const ac=new AbortController();const at=setTimeout(()=>ac.abort(),15000);
+    fetch('/api/generate-combos?type=auto&'+ids.map(id=>'ids='+id).join('&'),{signal:ac.signal}).then(r=>{
+      clearTimeout(at);
       if(!r.ok) return r.json().then(d=>{throw new Error(d.error||'API error')});
       return r.json();
     }).then(data=>{
@@ -396,7 +398,9 @@ function init(){
       html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="shareResult()">🔗 分享</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
       result.innerHTML=html;
     }).catch(e=>{
-      result.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px">'+e.message+'</div><div class="ar-actions"><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+      clearTimeout(at);
+      const msg=e.name==='AbortError'?'计算超时，请减少场次后重试':e.message;
+      result.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px">'+msg+'</div><div class="ar-actions"><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
     });
   };
   document.getElementById('animOverlay').onclick=function(e){if(e.target===this){skipAndClose()}};
@@ -692,7 +696,9 @@ function showResult(n,el){
   // Fetch real combo data from API
   const ids=[...st.picks].map(id=>'ids='+id).join('&');
   el.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0">加载组合分析...</div>';
-  fetch('/api/generate-combos?type='+n+'&'+ids).then(r=>{
+  const ctrl=new AbortController();const timer=setTimeout(()=>ctrl.abort(),15000);
+  fetch('/api/generate-combos?type='+n+'&'+ids,{signal:ctrl.signal}).then(r=>{
+    clearTimeout(timer);
     if(!r.ok) return r.json().then(d=>{throw new Error(d.error||'API error')}).catch(e=>{if(e.message)throw e;throw new Error('HTTP '+r.status)});
     return r.json();
   }).then(data=>{
@@ -716,10 +722,12 @@ function showResult(n,el){
     // P2-12: Record simulated bet
     if(combos.length>0 && window.recordBet) window.recordBet(parlay, combos);
   }).catch(e=>{
+    clearTimeout(timer);
     let msg='网络连接失败',detail='请检查网络后重试';
-    if(e.message&&e.message.includes('Not enough'))      {msg='选择场次不足';detail='请至少选择'+n+'场比赛';}
-    else if(e.message&&e.message.includes('matches'))    {msg='组合过多';detail='请减少选择场次（建议≤10场）';}
-    else if(e.message&&e.message.includes('API error'))  {msg='服务异常';detail='服务器繁忙，请稍后重试';}
+    if(e.name==='AbortError')                              {msg='计算超时';detail='请减少选择场次后重试';}
+    else if(e.message&&e.message.includes('Not enough'))   {msg='选择场次不足';detail='请至少选择'+n+'场比赛';}
+    else if(e.message&&e.message.includes('matches'))      {msg='组合过多';detail='请减少选择场次（建议≤10场）';}
+    else if(e.message&&e.message.includes('API error'))    {msg='服务异常';detail='服务器繁忙，请稍后重试';}
     el.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px;line-height:1.8">'+msg+'<br><span style="font-size:10px">'+detail+'</span></div><div class="ar-actions"><div class="ar-btn primary" onclick="closeAnim();setTimeout(function(){document.getElementById(\'gb\').click()},300)">🔄 重试</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
   });
 }
