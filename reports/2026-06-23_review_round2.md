@@ -13,9 +13,7 @@
 
 ## 遗留问题（待CC处理）
 
-| # | 严重度 | 问题 | 建议 |
-|---|--------|------|------|
-| 1 | 🟠 P1 | API返回100场比赛含20对重复 | SQL层用 `GROUP BY home_team, away_team` 或 `SELECT DISTINCT ON (home_team||away_team)` 去重 |
+无。API去重问题已修复（commit `743cc57`, v1.1.2）。
 
 ## 环境状态
 
