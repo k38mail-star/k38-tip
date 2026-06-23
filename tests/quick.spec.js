@@ -8,6 +8,9 @@
 
 const { test, expect } = require('@playwright/test');
 
+// P0-2: 限制只在Chrome上运行，避免15分钟等待
+test.use({ browserName: 'chromium' });
+
 test.describe('Layer 1: 部署快速验证', () => {
 
   test('1. API健康检查', async ({ request }) => {

@@ -8,9 +8,14 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('K38-TIP 完整视觉测试', () => {
 
+  // P1-7: 使用 beforeEach 统一管理页面访问
+  test.beforeEach(async ({ page }) => {
+    // P1-6: 使用条件等待代替硬编码 waitForTimeout
+    await page.waitForSelector('.mc, text=/加载|暂无/', { timeout: 15000 });
+  });
+
   test('1. 页面加载和基础元素检查', async ({ page }) => {
-    console.log('🔍 访问页面...');
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
+    console.log('🔍 检查页面基础元素...');
 
     // 检查标题
     await expect(page).toHaveTitle(/波波鸡/);
@@ -22,8 +27,7 @@ test.describe('K38-TIP 完整视觉测试', () => {
   });
 
   test('2. 搜索框位置检查', async ({ page }) => {
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2000);
+    // 已移除硬编码等待，使用beforeEach统一管理
 
     // 检查搜索框
     const searchInput = page.locator('input[placeholder*="搜索"]');
@@ -36,8 +40,7 @@ test.describe('K38-TIP 完整视觉测试', () => {
   });
 
   test('3. 时间和时区选择器位置检查', async ({ page }) => {
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2000);
+    // 已移除硬编码等待，使用beforeEach统一管理
 
     // 查找时间选择器（根据实际DOM结构调整）
     const dateSelector = page.locator('.date-selector, [class*="date"], [class*="time"]').first();
@@ -49,7 +52,6 @@ test.describe('K38-TIP 完整视觉测试', () => {
   });
 
   test('4. 比赛卡片必须渲染且位置正确', async ({ page }) => {
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
     console.log('⏳ 等待比赛数据加载...');
 
     // 等待比赛卡片出现（最多10秒）
@@ -71,7 +73,6 @@ test.describe('K38-TIP 完整视觉测试', () => {
   });
 
   test('5. 比赛卡片内容完整性检查', async ({ page }) => {
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
     await page.waitForSelector('.mc', { timeout: 10000 });
 
     const firstCard = page.locator('.mc').first();
@@ -95,8 +96,7 @@ test.describe('K38-TIP 完整视觉测试', () => {
   });
 
   test('6. 智能组合按钮位置检查', async ({ page }) => {
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
-    await page.waitForTimeout(2000);
+    // 已移除硬编码等待，使用beforeEach统一管理
 
     // 检查底部按钮
     const smartBtn = page.locator('text=/智能组合|智能推荐/').first();
@@ -119,7 +119,6 @@ test.describe('K38-TIP 完整视觉测试', () => {
     console.log(`📊 API返回 ${apiCount} 场比赛`);
 
     // 检查前端渲染
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
     await page.waitForSelector('.mc', { timeout: 10000 });
     const domCount = await page.locator('.mc').count();
     console.log(`📊 前端渲染 ${domCount} 个卡片`);
@@ -131,11 +130,10 @@ test.describe('K38-TIP 完整视觉测试', () => {
   });
 
   test('8. 视觉回归 - 截图对比', async ({ page }) => {
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
     await page.waitForSelector('.mc', { timeout: 10000 });
 
     // 等待所有图片加载
-    await page.waitForTimeout(2000);
+    // 已移除硬编码等待，使用beforeEach统一管理
 
     // 全页截图
     await expect(page).toHaveScreenshot('homepage-full.png', {
@@ -148,7 +146,6 @@ test.describe('K38-TIP 完整视觉测试', () => {
   test('9. 响应式布局检查（移动端）', async ({ page }) => {
     // 设置移动端视口
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
     await page.waitForSelector('.mc', { timeout: 10000 });
 
     const matchCards = await page.locator('.mc').count();
@@ -164,7 +161,6 @@ test.describe('K38-TIP 完整视觉测试', () => {
 
   test('10. 性能检查 - 加载时间', async ({ page }) => {
     const startTime = Date.now();
-    await page.goto('https://boboji.beer', { waitUntil: 'networkidle' });
     await page.waitForSelector('.mc', { timeout: 10000 });
     const loadTime = Date.now() - startTime;
 
