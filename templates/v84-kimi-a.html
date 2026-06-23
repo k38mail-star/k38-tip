@@ -86,6 +86,7 @@
   .mc-rec-draw{background:rgba(210,160,96,.15);color:#d4a060}
   .mc-rec .ai-tag{font-size:7px;background:rgba(255,255,255,.1);padding:1px 4px;border-radius:2px;letter-spacing:.3px}
   .sure-tag{font-size:9px;background:rgba(76,175,80,.15);color:#4caf50;padding:2px 6px;border-radius:4px;margin-right:6px;font-weight:600}
+  .mc-reason{font-size:9px;color:#8b7fa0;padding:2px 12px 4px 34px;margin-top:-2px}
   .mc-info{text-align:right;flex-shrink:0;font-size:10px;color:#8b7fa0;line-height:1.4}
   .mc-info .vl{font-weight:600;color:#a080d8;font-size:13px}
   .mc-info .lb{font-size:8px;color:#6a5a80;display:block;margin-bottom:1px}
@@ -547,7 +548,19 @@ function render(){
     if(diff>0&&diff<=7)return md+' '+h+':'+m;
     return md;
   }
-  
+
+  // P2-15: Generate recommendation reason based on xG difference
+  function getReasonText(m){
+    const hxg=m.home_xg||0,axg=m.away_xg||0;
+    const diff=Math.abs(hxg-axg);
+    const p=m.prediction;
+    if(diff>=1.5)return '实力差距明显';
+    if(diff>=1.0)return '进攻优势较大';
+    if(diff>=0.5)return '近期状态占优';
+    if(p==='平局')return '双方势均力敌';
+    return '';
+  }
+
   displayMatches.forEach((m,i)=>{
     const p=m.prediction,ih=p==='主胜',ia=p==='客胜',id=p==='平局';let odds=null;if(m.odds){if(ih)odds=m.odds.home_odds;else if(ia)odds=m.odds.away_odds;else if(id)odds=m.odds.draw_odds}
     const ed=m.odds&&m.odds.edge_pct,hF=m.home_flag||'⚽',aF=m.away_flag||'⚽',hN=m.home_cn||m.home,aN=m.away_cn||m.away;
@@ -562,6 +575,9 @@ function render(){
     // Add time display
     const timeEl=row.querySelector('.mc-info');
     if(timeEl)timeEl.innerHTML='<span class="lb">'+(isHotMatch(m)?'🔥 ':'')+fmtTime(m.date)+'</span><div class="vl">'+m.confidence+'<span style="font-size:8px;color:#6a5a80;font-weight:400">%</span>&nbsp;<span style="font-size:10px;letter-spacing:-1px">'+getLightning(m.confidence)+'</span><span class="lb" style="font-size:7px;display:block;margin-top:0">胜率</span></div>';
+    // P2-15: One-line recommendation reason
+    const reason=getReasonText(m);
+    if(reason){const reasonEl=document.createElement('div');reasonEl.className='mc-reason';reasonEl.textContent=reason;row.appendChild(reasonEl)}
     row.addEventListener('click',()=>{const ck=row.querySelector('.ck');togCK(ck,m.id)});
     ml.appendChild(row);
     // Auto-select only high-confidence matches (>60%)
