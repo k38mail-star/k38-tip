@@ -1,0 +1,22 @@
+name: 自动部署到新加坡服务器
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH到服务器并部署
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 47.82.162.85
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/k38-tip
+            git pull origin main
+            pip3 install -q flask numpy 2>/dev/null || true
+            systemctl restart k38-tip
+            echo "✅ $(date +%T) 部署完成"
