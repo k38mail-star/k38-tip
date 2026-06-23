@@ -9,7 +9,7 @@ from engine.poisson import PoissonModel
 from engine.monte_carlo import MonteCarlo
 
 app = Flask(__name__)
-VERSION = "v1.1.4"  # 波波鸡版本号 - 每次更新递增
+VERSION = "v1.1.5"  # 波波鸡版本号 - 每次更新递增
 DB = os.getenv("K38_DB", "/opt/k38-football/football.db")
 
 

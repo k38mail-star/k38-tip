@@ -528,7 +528,7 @@ function load(r){
     // Update match count on active date button
     const activeDate=document.querySelector('.date.sel');
     if(activeDate){const cnt=activeDate.querySelector('.cnt');if(cnt)cnt.textContent=(d.matches?.length||0)+'场'}
-  }).catch(e=>{cleanup();if(e.name==='AbortError')return;ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">加载失败</div>';ml.classList.add('s')});
+  }).catch(e=>{cleanup();if(e.name==='AbortError')return;console.error('Load failed:',e);ld.classList.remove('s');ml.innerHTML='<div style="padding:32px;text-align:center;color:#8b7fa0;font-size:12px">加载失败<br><span style="font-size:10px;color:#6a5a80;margin-top:6px;display:block">'+e.message+'</span></div>';ml.classList.add('s')});
 }
 
 // R2-27: Move fmtTime outside render() for performance
