@@ -93,6 +93,8 @@
   /* Football button */
   .fb-wrap{position:relative;display:flex;align-items:center;justify-content:center}
   .fb{width:72px;height:72px;border-radius:50%;border:none;background:linear-gradient(135deg,#7c5cbf,#5c3c9f);color:#fff;cursor:pointer;box-shadow:0 4px 20px rgba(124,92,191,.4);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:.15s;position:relative;z-index:2;font-size:32px;line-height:1;overflow:hidden}
+  @keyframes pulse{0%,100%{box-shadow:0 4px 20px rgba(124,92,191,.4)}50%{box-shadow:0 4px 30px rgba(124,92,191,.7)}}
+  .fb.ready{animation:pulse 1.5s ease-in-out infinite}
   .fb:disabled{opacity:.2;box-shadow:none;cursor:default}
   .fb:active:not(:disabled){transform:scale(.9)}
   .fb-label{font-size:10px;font-weight:700;margin-top:-2px;display:block}
@@ -480,6 +482,9 @@ function render(){
 function up(){
   const actual=st.picks.size;const capped=Math.min(actual,6);
   document.getElementById('sc').textContent=actual;document.getElementById('gb').disabled=actual<2;
+  // P1-7: Pulse animation when picks >= 2
+  const fbBtn=document.getElementById('gb');
+  if(actual>=2)fbBtn.classList.add('ready');else fbBtn.classList.remove('ready');
   const tag=document.getElementById('comboTag');
   const hint=document.getElementById('fbHint');
   if(actual<2){tag.textContent='—';if(hint)hint.textContent='选 2 场以上生成组合'}
