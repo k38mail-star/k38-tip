@@ -13,9 +13,7 @@ jobs:
 
       - name: 安装测试依赖
         run: |
-          npm init -y
-          npm install playwright
-          npx playwright install chromium
+          npm ci
 
       - name: SSH到服务器并部署
         uses: appleboy/ssh-action@v1.0.3
@@ -31,24 +29,20 @@ jobs:
             systemctl restart k38-tip
             echo "✅ $(date +%T) 部署完成"
 
-      - name: 视觉测试
+      - name: 运行部署后检查
         run: |
           echo "等待服务启动..."
           sleep 10
-          node tests/visual_test.js
+          bash post-deploy-check.sh
         env:
-          TEST_URL: https://boboji.beer/
+          DEPLOY_URL: https://boboji.beer/
 
-      - name: 上传截图（通过时）
-        if: success()
+      - name: 运行Playwright视觉测试
+        run: npx playwright test --reporter=list
+
+      - name: 上传测试报告
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshot-pass
-          path: screenshot.png
-
-      - name: 上传截图（失败时）
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshot-fail
-          path: screenshot_failed.png
+          name: playwright-report
+          path: playwright-report/
