@@ -1,0 +1,27 @@
+{
+  "name": "k38-tip-tests",
+  "version": "1.1.5",
+  "description": "K38-TIP 自动化测试套件",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:chrome": "playwright test --project=chromium",
+    "test:mobile": "playwright test --project=mobile-chrome",
+    "test:debug": "playwright test --debug",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report",
+    "post-deploy": "bash post-deploy-check.sh",
+    "install-browsers": "playwright install chromium firefox webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  },
+  "keywords": [
+    "playwright",
+    "e2e",
+    "visual-testing",
+    "k38"
+  ],
+  "author": "K38 Team",
+  "license": "MIT"
+}
