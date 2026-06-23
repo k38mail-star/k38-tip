@@ -297,6 +297,8 @@ def api_generate_combos():
     parlay_type = max(2, min(6, parlay_type))
 
     fixture_ids = request.args.getlist("ids", type=int)
+    # Deduplicate fixture IDs to prevent same match being calculated twice
+    fixture_ids = list(dict.fromkeys(fixture_ids))
     if len(fixture_ids) < parlay_type:
         return jsonify({"error": f"Need at least {parlay_type} matches, got {len(fixture_ids)}"}), 400
 
