@@ -133,3 +133,64 @@
 ```
 
 每个任务做完跑一下 `curl https://boboji.beer/v84 | grep "波波鸡"` 确保没崩。
+
+---
+
+## 🔴 Round 2 — 线上验证反馈 (boboji.beer/v84)
+
+### P1 - 功能缺陷
+
+#### 21. fetch 超时保护
+- **文件**: templates/v84-kimi-a.html (startAnim / auto recommend fetch)
+- **问题**: generate-combos fetch 没有超时保护，串关计算慢时 UI 永久卡"加载中"
+- **修复**: 加 AbortController + 15s timeout，超时后显示"计算超时，请减少场次"
+
+#### 22. 搜索框默认显示
+- **文件**: templates/v84-kimi-a.html
+- **问题**: 搜索框默认隐藏，用户不知道有搜索功能
+- **修复**: 去掉 display:none，默认显示搜索框；或至少加个搜索 icon 引导
+
+#### 23. 搜索时联赛标签联动
+- **文件**: templates/v84-kimi-a.html (searchInput handler)
+- **问题**: 搜"巴西"但联赛标签还亮着，用户困惑
+- **修复**: 搜索有内容时，清除当前联赛选中状态或只显示匹配到的联赛
+
+### P2 - 兼容性问题
+
+#### 24. 浅色主题 banner 文字颜色
+- **文件**: templates/v84-kimi-a.html (light theme CSS)
+- **问题**: 切换到浅色主题后，banner "波波鸡"白色文字看不清（白底白光）
+- **修复**: `body[data-theme="light"] h1, body[data-theme="light"] .subtitle` 改深色
+
+#### 25. 稳胆标签与AI推荐标签间距
+- **文件**: templates/v84-kimi-a.html (.sure-tag CSS)
+- **问题**: 稳胆标签和 AI 推荐标签堆叠在一起，间距不对
+- **修复**: 调整 `.sure-tag` 和 `.mc-info` 的 flex 布局，加 gap 或 margin
+
+#### 26. 底部操作栏遮挡最后一张卡片
+- **文件**: templates/v84-kimi-a.html (.ml CSS)
+- **问题**: 比赛列表滚动到底部，最后一个卡片被底部操作栏挡住一半
+- **修复**: `.ml` 加 `padding-bottom` 等于底部栏高度
+
+### P3 - 小优化
+
+#### 27. fmtTime 函数提取到 render 外
+- **文件**: templates/v84-kimi-a.html
+- **问题**: fmtTime 在 render() 内部每次重新定义，性能浪费
+- **修复**: 把 fmtTime 移到 render() 外面作为顶层函数
+
+#### 28. 模拟投注记录清除按钮
+- **文件**: templates/v84-kimi-a.html (stats overlay)
+- **问题**: 模拟投注记录没有清除按钮，存了就删不掉
+- **修复**: 已经有🗑清空按钮了，确认实际可用；如果不行就修 onclick
+
+#### 29. AI智能选串 loading 状态
+- **文件**: templates/v84-kimi-a.html (autoBtn click handler)
+- **问题**: 点击后没有 loading 状态，用户不知道在算
+- **修复**: 点击后按钮变灰 + 显示"计算中..."文字，完成后恢复
+
+#### 30. localStorage try/catch 包裹
+- **文件**: templates/v84-kimi-a.html (所有 localStorage 调用)
+- **问题**: 隐私模式下 localStorage 可能抛异常导致页面崩溃
+- **修复**: 统一用 safeGet/safeSet 包裹 localStorage 操作
+
