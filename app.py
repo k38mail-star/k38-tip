@@ -9,7 +9,7 @@ from engine.poisson import PoissonModel
 from engine.monte_carlo import MonteCarlo
 
 app = Flask(__name__)
-VERSION = "v1.1.3"  # 波波鸡版本号 - 每次更新递增
+VERSION = "v1.1.4"  # 波波鸡版本号 - 每次更新递增
 DB = os.getenv("K38_DB", "/opt/k38-football/football.db")
 
 
@@ -151,14 +151,16 @@ def get_candidate_matches(limit=100, date_from=None, date_to=None, league_ids=No
         rows = conn.execute(f"""
             SELECT fixture_id, home_team, away_team, home_team_cn, away_team_cn,
                    home_flag, away_flag, match_date, league_name, league_id
-            FROM (
-                SELECT *, ROW_NUMBER() OVER (PARTITION BY home_team, away_team ORDER BY match_date) as rn
-                FROM football_matches
-                WHERE {where_sql}
-            )
-            WHERE rn = 1
+            FROM football_matches
+            WHERE {where_sql}
+              AND fixture_id IN (
+                  SELECT MIN(fixture_id)
+                  FROM football_matches
+                  WHERE {where_sql}
+                  GROUP BY home_team, away_team
+              )
             ORDER BY match_date ASC LIMIT ?
-        """, params + [limit]).fetchall()
+        """, params + params + [limit]).fetchall()
         return [dict(r) for r in rows]
 
 
