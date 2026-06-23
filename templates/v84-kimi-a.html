@@ -105,6 +105,8 @@
   .fb:disabled{opacity:.2;box-shadow:none;cursor:default}
   .fb:active:not(:disabled){transform:scale(.9)}
   .fb-label{font-size:10px;font-weight:700;margin-top:-2px;display:block}
+  .auto-btn{display:block;margin:8px auto 0;padding:6px 14px;border-radius:8px;border:1px solid #2a2040;background:linear-gradient(135deg,#161122,#1a1428);color:#a080d8;font-size:11px;cursor:pointer;transition:.15s}
+  .auto-btn:hover{border-color:#7c5cbf;color:#c8b8e8}
   .fb-hint{font-size:8px;color:#6a5a80;text-align:center;margin-top:4px}
 
   /* ===== Animation Overlay ===== */
@@ -199,6 +201,7 @@
         <span>⚽</span>
         <span class="fb-label">智能组合</span>
       </button>
+      <button class="auto-btn" id="autoBtn" aria-label="AI智能推荐最优组合">🤖 智能推荐</button>
       <div class="fb-hint" id="fbHint">选 2 场以上生成组合</div>
     </div>
   </div>
@@ -339,6 +342,45 @@ function init(){
     e.onclick=()=>{document.querySelectorAll('.date').forEach(b=>b.classList.remove('sel'));e.classList.add('sel');load(r)};document.getElementById('dates').appendChild(e)});
   document.querySelector('.date').click();
   document.getElementById('gb').onclick=startAnim;
+  // P2-11: AI auto-recommend button
+  document.getElementById('autoBtn').onclick=function(){
+    // Use all matches with confidence > 60%, or all if picks exist
+    let ids;
+    if(st.picks.size>=2){
+      ids=[...st.picks];
+    } else {
+      ids=st.matches.filter(m=>m.confidence>=60).map(m=>m.id);
+      if(ids.length<2) ids=st.matches.slice(0,10).map(m=>m.id);
+    }
+    if(ids.length<2){showToast('⚠️ 至少需要2场比赛');return}
+    const overlay=document.getElementById('animOverlay');
+    const result=document.getElementById('animResult');
+    overlay.classList.add('s');result.classList.add('s');
+    result.innerHTML='<div style="text-align:center;padding:24px;color:#a080d8">🤖 AI正在枚举最优组合...</div>';
+    fetch('/api/generate-combos?type=auto&'+ids.map(id=>'ids='+id).join('&')).then(r=>{
+      if(!r.ok) return r.json().then(d=>{throw new Error(d.error||'API error')});
+      return r.json();
+    }).then(data=>{
+      const combos=data.top_combos||[];
+      let html='<div class="ar-title">🤖 AI 智能推荐 · '+data.type+'</div>';
+      if(combos.length===0){html+='<div class="ar-card" style="text-align:center;color:#8b7fa0;font-size:12px">暂无有效组合</div>'}
+      else{
+        combos.forEach((c,i)=>{
+          html+='<div class="ar-card"><div class="ar-row"><span>🏆 最优组合</span><span class="hit">命中率 '+(c.hit_pct||'—')+'%</span></div>'+
+            (c.fair_odds?'<div class="ar-row"><span>公平赔率</span><span class="v">'+c.fair_odds+'x</span></div>':'')+
+            '<div class="ar-row"><span>串关类型</span><span class="v">'+data.type+'</span></div>';
+          (c.matches||[]).forEach(m=>{
+            html+='<div class="ar-row" style="padding:4px 0;font-size:10px"><span>'+(m.home||'')+' vs '+(m.away||'')+'</span><span class="'+(m.prediction==='主胜'?'v':'hit')+'">'+(m.prediction||'')+'</span></div>';
+          });
+          html+='</div>';
+        });
+      }
+      html+='<div class="ar-actions"><div class="ar-btn primary" onclick="saveResult()">📸 保存截图</div><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+      result.innerHTML=html;
+    }).catch(e=>{
+      result.innerHTML='<div style="text-align:center;padding:24px;color:#8b7fa0;font-size:12px">'+e.message+'</div><div class="ar-actions"><div class="ar-btn" onclick="closeAnim()">✕ 关闭</div></div>';
+    });
+  };
   document.getElementById('animOverlay').onclick=function(e){if(e.target===this){skipAndClose()}};
   document.getElementById('animOverlay').addEventListener('dblclick',function(e){e.stopPropagation();skipAndClose()});
 

@@ -289,8 +289,99 @@ def api_generate_combos():
     """生成所有串关组合，Monte Carlo 模拟排序"""
     _, mc = get_engine()
 
+    type_param = request.args.get("type", "3")
+
+    # P2-11: Auto mode - enumerate 2-6 fold parlays and return the best
+    if type_param == "auto":
+        fixture_ids = request.args.getlist("ids", type=int)
+        fixture_ids = list(dict.fromkeys(fixture_ids))
+        if len(fixture_ids) < 2:
+            return jsonify({"error": "Need at least 2 matches for auto mode"}), 400
+
+        poisson, _ = get_engine()
+        match_list = []
+        with get_db() as conn:
+            for fid in fixture_ids:
+                pred = _pred_cache.get_item(fid)
+                if pred is None:
+                    row = conn.execute(
+                        "SELECT home_team, away_team, league_id FROM football_matches WHERE fixture_id = ?",
+                        (fid,)
+                    ).fetchone()
+                    if not row:
+                        continue
+                    pred = poisson.predict_score(row["home_team"], row["away_team"], row["league_id"])
+                    if "error" in pred:
+                        continue
+                    _pred_cache.put(fid, pred)
+                    home, away = row["home_team"], row["away_team"]
+                else:
+                    row = conn.execute(
+                        "SELECT home_team, away_team FROM football_matches WHERE fixture_id = ?",
+                        (fid,)
+                    ).fetchone()
+                    if not row:
+                        continue
+                    home, away = row["home_team"], row["away_team"]
+
+                hw = pred["win_prob"]["home"]
+                aw = pred["win_prob"]["away"]
+                dw = pred["win_prob"]["draw"]
+                if hw >= aw and hw >= dw:
+                    bet_type, prob, prediction = "home_win", hw, "主胜"
+                elif aw >= hw and aw >= dw:
+                    bet_type, prob, prediction = "away_win", aw, "客胜"
+                else:
+                    bet_type, prob, prediction = "draw", dw, "平局"
+                match_list.append({
+                    "fixture_id": fid,
+                    "home": home,
+                    "away": away,
+                    "home_xg": pred["home_xg"],
+                    "away_xg": pred["away_xg"],
+                    "bet_type": bet_type,
+                    "prob": prob,
+                    "prediction": prediction,
+                })
+
+        if len(match_list) < 2:
+            return jsonify({"error": "Not enough valid matches"}), 400
+
+        # Enumerate all parlay types and find the best
+        best_combo = None
+        best_hit_rate = 0
+        best_type = 2
+        for pt in range(2, min(7, len(match_list) + 1)):
+            for combo in itertools.combinations(match_list, pt):
+                sim = mc.simulate_parlay(list(combo))
+                if sim["hit_rate"] > best_hit_rate:
+                    best_hit_rate = sim["hit_rate"]
+                    best_combo = combo
+                    best_type = pt
+
+        if best_combo:
+            combo_hit_prob = 1.0
+            for leg in best_combo:
+                combo_hit_prob *= leg["prob"]
+            result = {
+                "matches": [{"home": c["home"], "away": c["away"], "prediction": c["prediction"]} for c in best_combo],
+                "hit_rate": best_hit_rate,
+                "hit_pct": round(best_hit_rate * 100, 1),
+                "combined_prob": round(combo_hit_prob * 100, 1),
+                "fair_odds": round(1 / best_hit_rate, 2) if best_hit_rate > 0 else 999,
+            }
+            return jsonify({
+                "type": f"{best_type}x1",
+                "auto_selected": True,
+                "total_combos": 1,
+                "candidate_matches": len(match_list),
+                "top_combos": [result],
+            })
+        else:
+            return jsonify({"error": "No valid combinations found"}), 400
+
     try:
-        parlay_type = int(request.args.get("type", 3))
+        parlay_type = int(type_param)
     except (ValueError, TypeError):
         parlay_type = 3
     parlay_type = max(2, min(6, parlay_type))
