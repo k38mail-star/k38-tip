@@ -153,9 +153,28 @@
   @keyframes checkPop{0%{opacity:0;transform:scale(0)}50%{transform:scale(1.2)}100%{opacity:1;transform:scale(1)}}
   @keyframes resultSlide{0%{opacity:0;transform:translateY(20px)}100%{opacity:1;transform:translateY(0)}}
   @keyframes ballBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+  /* P1-10: Light theme */
+  body[data-theme="light"]{background:#f5f3f8;color:#2a2040}
+  body[data-theme="light"]::before,body[data-theme="light"]::after{opacity:0}
+  body[data-theme="light"] .tag{background:#fff;border-color:#d4c8e8;color:#4a3c60}
+  body[data-theme="light"] .tag.sel{background:#eee6ff;border-color:#7c5cbf;color:#5c3c9f}
+  body[data-theme="light"] .date{background:#fff;border-color:#d4c8e8;color:#4a3c60}
+  body[data-theme="light"] .date.sel{background:#eee6ff;border-color:#7c5cbf;color:#5c3c9f}
+  body[data-theme="light"] .mc{background:rgba(255,255,255,.9);border-color:#d4c8e8}
+  body[data-theme="light"] .mc.sel{border-color:#7c5cbf;background:#f8f0ff}
+  body[data-theme="light"] .mc-t-name{color:#2a2040}
+  body[data-theme="light"] .tags{background:#f5f3f8}
+  body[data-theme="light"] .bb{background:linear-gradient(135deg,#f0ecf6,#e8e0f8);border-top-color:#d4c8e8}
+  body[data-theme="light"] .disclaimer{background:rgba(245,243,248,.9);color:#6a5a80}
+  body[data-theme="light"] #searchInput{background:#fff;border-color:#d4c8e8;color:#2a2040}
+  .theme-toggle{position:fixed;top:12px;right:12px;z-index:200;background:rgba(22,17,34,.6);border:1px solid #2a2040;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;backdrop-filter:blur(4px);transition:.15s}
+  .theme-toggle:hover{border-color:#7c5cbf}
+  body[data-theme="light"] .theme-toggle{background:rgba(255,255,255,.8);border-color:#d4c8e8}
 </style>
 </head>
 <body>
+<div class="theme-toggle" id="themeToggle" title="切换主题">🌙</div>
 <h1>⚽ <span style="font-size:32px">波波机</span></h1>
 <div class="subtitle" style="font-size:11px;color:#a080d8;font-weight:500">看球必备 · 两元壹串波波鸡 🐔</div>
 <div style="text-align:center;font-size:9px;color:#6a5a80;margin-bottom:12px;line-height:1.5">
@@ -705,6 +724,21 @@ function closeAnim(){
   document.getElementById('animResult').classList.remove('s');
   document.getElementById('animOverlay').classList.remove('s');
 }
+
+// P1-10: Theme toggle
+(function(){
+  const toggle=document.getElementById('themeToggle');
+  const saved=localStorage.getItem('k38_theme')||'dark';
+  document.body.setAttribute('data-theme',saved);
+  toggle.textContent=saved==='light'?'☀️':'🌙';
+  toggle.addEventListener('click',function(){
+    const current=document.body.getAttribute('data-theme')||'dark';
+    const next=current==='dark'?'light':'dark';
+    document.body.setAttribute('data-theme',next);
+    toggle.textContent=next==='light'?'☀️':'🌙';
+    localStorage.setItem('k38_theme',next);
+  });
+})();
 
 init();
 </script>
