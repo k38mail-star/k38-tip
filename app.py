@@ -9,8 +9,8 @@ from engine.poisson import PoissonModel
 from engine.monte_carlo import MonteCarlo
 
 app = Flask(__name__)
-VERSION = "v1.1.0"  # 波波鸡版本号 - 每次更新递增
-DB = "/opt/k38-football/football.db"
+VERSION = "v1.1.1"  # 波波鸡版本号 - 每次更新递增
+DB = os.getenv("K38_DB", "/opt/k38-football/football.db")
 
 
 # ---------------------------------------------------------------------------
@@ -493,6 +493,7 @@ def predict_match(fixture_id):
 
 @app.route("/api/version")
 def api_version():
+    """返回当前运行版本"""
     commit = ""
     try:
         import subprocess
