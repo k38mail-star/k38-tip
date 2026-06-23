@@ -61,7 +61,7 @@ class LRUCache(OrderedDict):
 _poisson = None
 _monte = None
 _pred_cache = LRUCache(500)
-_odds_cache = LRUCache(500)
+_odds_cache = LRUCache(500)  # P0-2: LRU eviction prevents unbounded growth
 
 
 # ---------------------------------------------------------------------------
